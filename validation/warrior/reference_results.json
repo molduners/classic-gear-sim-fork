@@ -1,0 +1,263 @@
+{
+  "warriorSimCommit": "ae03455a9421d04a1563c27393e909cffeb56cf2",
+  "scenarios": {
+    "white-2h-tauren": {
+      "iterations": 20000,
+      "dps": 37.273905799265684,
+      "abilities": {
+        "mh": {
+          "dps": 37.273905799270985
+        }
+      },
+      "dpsStdev": 3.2950456376249644,
+      "dpsStderr": 0.023299491146837634,
+      "mh": {
+        "totalDamage": 4472.868695912518,
+        "outcomes": {
+          "hit": 285334,
+          "miss": 57717,
+          "dodge": 41585,
+          "crit": 0,
+          "glance": 255364
+        }
+      },
+      "stats": {
+        "ap": 472,
+        "str": 125,
+        "agi": 75,
+        "crit": 0,
+        "skillMH": 300
+      }
+    },
+    "white-2h-orc-axe": {
+      "iterations": 20000,
+      "dps": 43.16772111826285,
+      "abilities": {
+        "mh": {
+          "dps": 43.167721118263074
+        }
+      },
+      "dpsStdev": 2.9931558541752894,
+      "dpsStderr": 0.0211648080163556,
+      "mh": {
+        "totalDamage": 5180.126534191569,
+        "outcomes": {
+          "hit": 306493,
+          "miss": 38537,
+          "dodge": 38512,
+          "crit": 0,
+          "glance": 256458
+        }
+      },
+      "stats": {
+        "ap": 468,
+        "str": 123,
+        "agi": 77,
+        "crit": 0,
+        "skillMH": 305
+      }
+    },
+    "white-dw-tauren": {
+      "iterations": 20000,
+      "dps": 34.99874406559093,
+      "abilities": {
+        "mh": {
+          "dps": 23.32138308722175
+        },
+        "oh": {
+          "dps": 11.677360978357958
+        }
+      },
+      "dpsStdev": 2.9960947354282927,
+      "dpsStderr": 0.021185589044986606,
+      "mh": {
+        "totalDamage": 2798.56597046661,
+        "outcomes": {
+          "hit": 224685,
+          "miss": 235493,
+          "dodge": 56019,
+          "crit": 0,
+          "glance": 343803
+        }
+      },
+      "oh": {
+        "totalDamage": 1401.283317402955,
+        "outcomes": {
+          "hit": 349894,
+          "miss": 366702,
+          "dodge": 87014,
+          "crit": 0,
+          "glance": 536390
+        }
+      },
+      "stats": {
+        "ap": 468,
+        "str": 129,
+        "agi": 75,
+        "crit": 0,
+        "skillMH": 300
+      }
+    },
+    "fury-dw-p1": {
+      "iterations": 20000,
+      "dps": 180.44161696782157,
+      "abilities": {
+        "heroicstrike": {
+          "dps": 5.300952834909425,
+          "casts": 1.9866
+        },
+        "whirlwind": {
+          "dps": 16.915844137378578,
+          "casts": 10.15075
+        },
+        "bloodthirst": {
+          "dps": 23.505466363255525,
+          "casts": 11.1509
+        },
+        "deepwounds": {
+          "dps": 9.015606093770755
+        },
+        "mh": {
+          "dps": 75.75755497813816
+        },
+        "oh": {
+          "dps": 46.042492560297546
+        },
+        "mhprocs": {
+          "dps": 3.9037
+        }
+      },
+      "dpsStdev": 14.243146669096205,
+      "dpsStderr": 0.10071425595152514,
+      "mh": {
+        "totalDamage": 9090.90659737658,
+        "outcomes": {
+          "hit": 207430,
+          "miss": 144274,
+          "dodge": 61188,
+          "crit": 222281,
+          "glance": 422292
+        }
+      },
+      "oh": {
+        "totalDamage": 5525.099107235706,
+        "outcomes": {
+          "hit": 218543,
+          "miss": 144811,
+          "dodge": 63791,
+          "crit": 231952,
+          "glance": 439893
+        }
+      },
+      "stats": {
+        "ap": 800,
+        "str": 252,
+        "agi": 157,
+        "crit": 21.05,
+        "skillMH": 307
+      }
+    },
+    "arms-2h-p1": {
+      "iterations": 20000,
+      "dps": 146.6161711477188,
+      "abilities": {
+        "heroicstrike": {
+          "dps": 0.031430935976600585,
+          "casts": 0.0078
+        },
+        "whirlwind": {
+          "dps": 17.32758438779676,
+          "casts": 6.68595
+        },
+        "mortalstrike": {
+          "dps": 31.833955787292876,
+          "casts": 8.7611
+        },
+        "deepwounds": {
+          "dps": 13.765506356146407
+        },
+        "mh": {
+          "dps": 83.65769368040081
+        }
+      },
+      "dpsStdev": 13.89270632884979,
+      "dpsStderr": 0.09823626854162952,
+      "mh": {
+        "totalDamage": 10038.923241648097,
+        "outcomes": {
+          "hit": 192435,
+          "miss": 0,
+          "dodge": 39653,
+          "crit": 162012,
+          "glance": 263093
+        }
+      },
+      "stats": {
+        "ap": 844,
+        "str": 243,
+        "agi": 148,
+        "crit": 19.599999999999998,
+        "skillMH": 305
+      }
+    },
+    "fury-dw-p1-buffed": {
+      "iterations": 20000,
+      "dps": 288.2337490452037,
+      "abilities": {
+        "heroicstrike": {
+          "dps": 27.639296193983895,
+          "casts": 8.06585
+        },
+        "whirlwind": {
+          "dps": 24.72589276751108,
+          "casts": 10.7376
+        },
+        "bloodthirst": {
+          "dps": 52.3597888566216,
+          "casts": 14.63385
+        },
+        "deepwounds": {
+          "dps": 10.035111107217961
+        },
+        "mh": {
+          "dps": 99.76354216243492
+        },
+        "oh": {
+          "dps": 69.03121795727137
+        },
+        "mhprocs": {
+          "dps": 4.6789
+        }
+      },
+      "dpsStdev": 20.86393232621975,
+      "dpsStderr": 0.14753028030087204,
+      "mh": {
+        "totalDamage": 11971.62505949219,
+        "outcomes": {
+          "hit": 120277,
+          "miss": 130533,
+          "dodge": 52431,
+          "crit": 287391,
+          "glance": 394439
+        }
+      },
+      "oh": {
+        "totalDamage": 8283.746154872564,
+        "outcomes": {
+          "hit": 158395,
+          "miss": 134584,
+          "dodge": 60535,
+          "crit": 334869,
+          "glance": 457940
+        }
+      },
+      "stats": {
+        "ap": 1250,
+        "str": 346,
+        "agi": 221,
+        "crit": 29.249999999999996,
+        "skillMH": 312
+      }
+    }
+  }
+}

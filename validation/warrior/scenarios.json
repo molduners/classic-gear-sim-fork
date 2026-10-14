@@ -1,0 +1,157 @@
+{
+  "comment": "Shared scenario definitions for validating the warrior sim against WarriorSim (https://github.com/GuybrushGit/WarriorSim). Item, buff and talent names map to both sims in run_warriorsim.mjs and reference_test.go.",
+  "scenarios": [
+    {
+      "name": "white-2h-tauren",
+      "description": "Auto attacks only, two-hander, 300 weapon skill, no gear, talents or buffs. Checks the attack table, glancing blows, crits and weapon damage.",
+      "race": "Tauren",
+      "talents": "",
+      "gear": {
+        "mainhand": 12784
+      },
+      "buffs": [],
+      "rotation": "white",
+      "fightSeconds": 120,
+      "executePercent": 0,
+      "targetArmor": 3731,
+      "tolerance": 0.02
+    },
+    {
+      "name": "white-2h-orc-axe",
+      "description": "As white-2h-tauren but an orc with an axe, so 305 weapon skill from the racial.",
+      "race": "Orc",
+      "talents": "",
+      "gear": {
+        "mainhand": 12784
+      },
+      "buffs": [],
+      "rotation": "white",
+      "fightSeconds": 120,
+      "executePercent": 0,
+      "targetArmor": 3731,
+      "tolerance": 0.02
+    },
+    {
+      "name": "white-dw-tauren",
+      "description": "Auto attacks only, dual-wielding one-handers. Checks the dual-wield miss penalty and off-hand damage.",
+      "race": "Tauren",
+      "talents": "",
+      "gear": {
+        "mainhand": 12940,
+        "offhand": 12939
+      },
+      "buffs": [],
+      "rotation": "white",
+      "fightSeconds": 120,
+      "executePercent": 0,
+      "targetArmor": 3731,
+      "tolerance": 0.02
+    },
+    {
+      "name": "fury-dw-p1",
+      "description": "Fury dual-wield with WoWSims' phase 1 gear (no enchants), Berserker Stance, no raid buffs. Bloodrage, Bloodthirst, Whirlwind, Heroic Strike at 30+ rage. Checks rage, abilities, procs and talents together.",
+      "race": "Orc",
+      "talents": "30305001302-05050005525010051",
+      "gear": {
+        "head": 12640,
+        "neck": 18404,
+        "shoulder": 12927,
+        "back": 18541,
+        "chest": 11726,
+        "wrist": 19146,
+        "hands": 14551,
+        "waist": 19137,
+        "legs": 14554,
+        "feet": 14616,
+        "finger1": 17063,
+        "finger2": 18821,
+        "trinket1": 11815,
+        "trinket2": 13965,
+        "mainhand": 17075,
+        "offhand": 18832,
+        "ranged": 17069
+      },
+      "buffs": [
+        "berserker_stance"
+      ],
+      "rotation": "fury",
+      "fightSeconds": 120,
+      "executePercent": 0,
+      "targetArmor": 3731,
+      "tolerance": 0.03
+    },
+    {
+      "name": "arms-2h-p1",
+      "description": "Arms two-hander (Arcanite Reaper, orc axe skill) with the same phase 1 armour, Berserker Stance, no raid buffs. Bloodrage, Mortal Strike, Whirlwind, Heroic Strike at 50+ rage.",
+      "race": "Orc",
+      "talents": "303050213525100001-05050005023",
+      "gear": {
+        "head": 12640,
+        "neck": 18404,
+        "shoulder": 12927,
+        "back": 18541,
+        "chest": 11726,
+        "wrist": 19146,
+        "hands": 14551,
+        "waist": 19137,
+        "legs": 14554,
+        "feet": 14616,
+        "finger1": 17063,
+        "finger2": 18821,
+        "trinket1": 11815,
+        "trinket2": 13965,
+        "mainhand": 12784,
+        "ranged": 17069
+      },
+      "buffs": [
+        "berserker_stance"
+      ],
+      "rotation": "arms",
+      "fightSeconds": 120,
+      "executePercent": 0,
+      "targetArmor": 3731,
+      "tolerance": 0.03
+    },
+    {
+      "name": "fury-dw-p1-buffed",
+      "description": "fury-dw-p1 as a Human (paladin blessings are Alliance-only), plus common raid buffs and consumables: Blessing of Kings, improved Blessing of Might, improved Mark of the Wild, Leader of the Pack, Elixir of the Mongoose, Juju Power, Juju Might, Smoked Desert Dumplings.",
+      "race": "Human",
+      "talents": "30305001302-05050005525010051",
+      "gear": {
+        "head": 12640,
+        "neck": 18404,
+        "shoulder": 12927,
+        "back": 18541,
+        "chest": 11726,
+        "wrist": 19146,
+        "hands": 14551,
+        "waist": 19137,
+        "legs": 14554,
+        "feet": 14616,
+        "finger1": 17063,
+        "finger2": 18821,
+        "trinket1": 11815,
+        "trinket2": 13965,
+        "mainhand": 17075,
+        "offhand": 18832,
+        "ranged": 17069
+      },
+      "buffs": [
+        "berserker_stance",
+        "kings",
+        "might_improved",
+        "motw_improved",
+        "leader_of_the_pack",
+        "mongoose",
+        "juju_power",
+        "juju_might",
+        "dumplings"
+      ],
+      "rotation": "fury",
+      "fightSeconds": 120,
+      "executePercent": 0,
+      "targetArmor": 3731,
+      "tolerance": 0.03
+    }
+  ]
+}

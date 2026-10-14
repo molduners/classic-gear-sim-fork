@@ -7,9 +7,9 @@ decision at a time.
 
 ## Current milestone
 
-**Milestone 1: fork and ruleset layer** (done locally, waiting for the GitHub fork).
-Next: milestone 2, Warrior (Arms/Fury) end to end through the CLI, validated
-against an independent reference.
+**Milestone 2: Warrior (Arms/Fury) validated** against WarriorSim within 3%
+(`validation/warrior`). Milestone 1 (fork and ruleset layer) is merged.
+Next: milestone 3, the Quick Sim web page.
 
 The full plan (architecture, milestones, coverage) is in the project's plan doc:
 https://claude.ai/code/artifact/61044d30-999a-4b64-9abf-ae7180a84baa
@@ -64,8 +64,11 @@ go test -tags=with_db $(go list -e ./sim/... | grep -v sim/web)
 # Re-record golden results after an intended change (then review the diff!)
 make update-tests
 
-# Run a sim from the command line
-go run -tags=with_db ./cmd/wowsimcli sim --infile examples/vanilla_fury_warrior.json
+# Run a sim from the command line (--summary prints DPS and a damage breakdown instead of JSON)
+go run -tags=with_db ./cmd/wowsimcli sim --summary --infile examples/vanilla_fury_warrior.json
+
+# Check the warrior against WarriorSim (details in validation/warrior/README.md)
+go test -tags=with_db -v ./validation/warrior
 
 # Build the website into dist/classic (don't use make -j, the asset rules race)
 make
@@ -78,6 +81,7 @@ http://localhost:8080/classic/.
 
 - Repo: https://github.com/molduners/classic-gear-sim-fork (a copy of wowsims/classic with full history, not a GitHub fork).
 - CI: `run_tests.yml` builds and runs the tests on every pull request to `master`.
+- `sim.yml` ("Run a sim") runs one sim from the Actions tab, no local setup needed.
 - Removed upstream workflows that deploy to the wowsims site, post to their Discord, or cut weekly releases.
   Hosting our own site is a later decision.
 
@@ -86,5 +90,9 @@ http://localhost:8080/classic/.
 - Golden tests (`*.results` files) are fixed-seed regression snapshots, not proof of
   accuracy. A spec is only "validated" in `COVERAGE.md` once it matches an independent
   reference within a recorded tolerance.
+- Validation scenarios live in `validation/<class>/`. Never copy code from unlicensed
+  reference sims (e.g. WarriorSim); fetch them into a gitignored `.cache/` instead.
+- In APLs, queue Heroic Strike / Cleave / Maul with `"tag": 1`. Untagged, it casts as an
+  instant extra attack and overstates DPS by about 30%.
 - Every spell coefficient or proc rate we add or change gets a source note in a comment.
   Mark uncertain values `// UNCERTAIN:` and list them in `COVERAGE.md`.

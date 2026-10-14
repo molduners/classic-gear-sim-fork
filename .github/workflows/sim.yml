@@ -1,0 +1,36 @@
+# Runs one sim from the browser: Actions tab -> "Run a sim" -> "Run workflow".
+# The result shows on the run's summary page.
+name: Run a sim
+on:
+  workflow_dispatch:
+    inputs:
+      infile:
+        description: Sim settings file (a RaidSimRequest in JSON)
+        default: examples/vanilla_fury_warrior.json
+        required: true
+jobs:
+  sim:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.x
+
+      - uses: arduino/setup-protoc@v3
+        with:
+          version: '29.x'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate data formats
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+          make sim/core/proto/api.pb.go
+
+      - name: Sim
+        env:
+          INFILE: ${{ inputs.infile }}
+        run: |
+          go run -tags=with_db ./cmd/wowsimcli sim --summary --infile "$INFILE" | tee result.txt
+          { echo "### Sim of \`$INFILE\`"; echo '```'; cat result.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

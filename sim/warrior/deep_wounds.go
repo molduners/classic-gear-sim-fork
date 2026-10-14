@@ -71,6 +71,8 @@ func (warrior *Warrior) applyDeepWounds() {
 func (warrior *Warrior) procDeepWounds(sim *core.Simulation, target *core.Unit, isOh bool) {
 	dot := warrior.DeepWounds.Dot(target)
 
+	// UNCERTAIN: an off-hand crit uses half the off-hand weapon's damage here. WarriorSim always
+	// uses the main hand, which makes Fury's Deep Wounds about 20% stronger. No primary source settles it.
 	var awd float64
 	if isOh {
 		attackTableOh := warrior.AttackTables[target.UnitIndex][proto.CastType_CastTypeOffHand]
