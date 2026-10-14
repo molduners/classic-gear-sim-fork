@@ -52,9 +52,10 @@ export const simLaunchStatuses: Record<Spec, SimStatus> = {
 		phase: Phase.Phase1,
 		status: LaunchStatus.Unlaunched,
 	},
+	// Warden Shaman is a Season of Discovery spec and does not exist in vanilla.
 	[Spec.SpecWardenShaman]: {
 		phase: Phase.Phase1,
-		status: LaunchStatus.Launched,
+		status: LaunchStatus.Unlaunched,
 	},
 	[Spec.SpecHunter]: {
 		phase: Phase.Phase1,
