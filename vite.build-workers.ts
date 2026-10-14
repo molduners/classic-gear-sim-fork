@@ -22,7 +22,11 @@ const args = minimist(process.argv.slice(2), { boolean: ['watch'] });
 const buildWorkers = async () => {
 	const { stdout } = await execAsync('go env GOROOT');
 	const GO_ROOT = stdout.replace('\n', '');
-	const wasmExecutablePath = path.join(GO_ROOT, '/misc/wasm/wasm_exec.js');
+	// Go 1.24 moved wasm_exec.js from misc/wasm to lib/wasm.
+	const wasmExecutablePath = await fs
+		.access(path.join(GO_ROOT, '/lib/wasm/wasm_exec.js'))
+		.then(() => path.join(GO_ROOT, '/lib/wasm/wasm_exec.js'))
+		.catch(() => path.join(GO_ROOT, '/misc/wasm/wasm_exec.js'));
 	const wasmFile = await fs.readFile(wasmExecutablePath, 'utf8');
 
 	Object.entries(workers).forEach(async ([name, sourcePath]) => {

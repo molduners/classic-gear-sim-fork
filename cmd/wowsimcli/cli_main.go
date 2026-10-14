@@ -2,12 +2,10 @@ package main
 
 import (
 	"github.com/wowsims/classic/cmd/wowsimcli/cmd"
-	"github.com/wowsims/classic/sim"
-)
 
-func init() {
-	sim.RegisterAll()
-}
+	// Each supported game version registers itself as a ruleset.
+	_ "github.com/wowsims/classic/sim/ruleset/vanilla"
+)
 
 // Version information.
 // This variable is set by the makefile in the release process.
