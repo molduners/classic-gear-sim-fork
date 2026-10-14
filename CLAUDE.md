@@ -74,6 +74,13 @@ make
 To view the built site: `cd dist && python3 -m http.server 8080`, then open
 http://localhost:8080/classic/.
 
+## GitHub
+
+- Repo: https://github.com/molduners/classic-gear-sim-fork (a copy of wowsims/classic with full history, not a GitHub fork).
+- CI: `run_tests.yml` builds and runs the tests on every pull request to `master`.
+- Removed upstream workflows that deploy to the wowsims site, post to their Discord, or cut weekly releases.
+  Hosting our own site is a later decision.
+
 ## Testing rules
 
 - Golden tests (`*.results` files) are fixed-seed regression snapshots, not proof of
