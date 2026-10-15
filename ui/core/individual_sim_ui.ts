@@ -1,3 +1,5 @@
+import { Tab } from 'bootstrap';
+
 import { CharacterStats, StatMods } from './components/character_stats';
 import { ContentBlock } from './components/content_block';
 import { EmbeddedDetailedResults } from './components/detailed_results';
@@ -7,6 +9,8 @@ import { BulkTab } from './components/individual_sim_ui/bulk_tab';
 import { Individual60UEPExporter, IndividualJsonExporter, IndividualLinkExporter, IndividualPawnEPExporter } from './components/individual_sim_ui/exporters';
 import { GearTab } from './components/individual_sim_ui/gear_tab';
 import { Individual60UImporter, IndividualAddonImporter, IndividualJsonImporter, IndividualLinkImporter } from './components/individual_sim_ui/importers';
+import { parseAddonExport } from './components/individual_sim_ui/importers/individual_addon_importer';
+import { applyCharacterImport, showImportResultToast } from './components/individual_sim_ui/importers/individual_importer';
 import { ItemSwapConfig } from './components/individual_sim_ui/item_swap_picker';
 import { RotationTab } from './components/individual_sim_ui/rotation_tab';
 import { SettingsTab } from './components/individual_sim_ui/settings_tab';
@@ -15,6 +19,8 @@ import * as InputHelpers from './components/input_helpers';
 import { addRaidSimAction, RaidSimResultsManager } from './components/raid_sim_action';
 import { SavedDataConfig } from './components/saved_data_manager';
 import { addStatWeightsAction } from './components/stat_weights_action';
+import Toast from './components/toast';
+import * as Mechanics from './constants/mechanics';
 import { MAX_TALENT_POINTS } from './constants/mechanics';
 import { GLOBAL_DISPLAY_PSEUDO_STATS, GLOBAL_DISPLAY_STATS, GLOBAL_EP_STATS } from './constants/other';
 import { SimSettingCategories } from './constants/sim_settings';
@@ -44,6 +50,7 @@ import { ItemSwapGear } from './proto_utils/gear';
 import { professionNames } from './proto_utils/names';
 import { Stats, UnitStat } from './proto_utils/stats';
 import { getTalentPoints, isHealingSpec, isTankSpec, SpecOptions, SpecRotation, specToEligibleRaces, specToLocalStorageKey } from './proto_utils/utils';
+import { takeQuickSimImport } from './quick_sim';
 import { SimUI, SimWarning } from './sim_ui';
 import { EventID, TypedEvent } from './typed_event';
 
@@ -250,7 +257,11 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 			// This needs to go before all the UI components so that gear loading is the
 			// first callback invoked from waitForInit().
 			this.sim.waitForInit().then(() => {
-				this.loadSettings();
+				const quickSimData = takeQuickSimImport(window.location);
+				this.loadSettings(quickSimData != null);
+				if (quickSimData != null) {
+					this.runQuickSim(quickSimData);
+				}
 
 				if (isHealingSpec(this.player.spec)) {
 					alert(Tooltips.HEALING_SIM_DISCLAIMER);
@@ -272,11 +283,12 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 		this.addTopbarComponents();
 	}
 
-	private loadSettings() {
+	// skipSaved: start from the spec's defaults, ignoring saved and link settings (used by Quick Sim).
+	private loadSettings(skipSaved = false) {
 		const initEventID = TypedEvent.nextEventID();
 		TypedEvent.freezeAllAndDo(() => {
 			this.applyDefaults(initEventID);
-			const savedSettings = window.localStorage.getItem(this.getSettingsStorageKey());
+			const savedSettings = skipSaved ? null : window.localStorage.getItem(this.getSettingsStorageKey());
 			if (savedSettings != null) {
 				try {
 					const settings = IndividualSimSettings.fromJsonString(savedSettings);
@@ -307,6 +319,37 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 				window.localStorage.setItem(this.getSettingsStorageKey(), jsonStr);
 			});
 		});
+	}
+
+	// Imports a WoWSims Exporter string over the default settings, runs the sim and shows the results.
+	private async runQuickSim(data: string) {
+		try {
+			const imported = parseAddonExport(data);
+			const missing = await applyCharacterImport(
+				this,
+				imported.charClass,
+				imported.race,
+				imported.equipmentSpec,
+				imported.talentsStr,
+				imported.professions,
+			);
+			showImportResultToast(missing);
+			if (imported.level > 0 && imported.level < Mechanics.MAX_CHARACTER_LEVEL) {
+				new Toast({
+					variant: 'warning',
+					body: `This character is level ${imported.level}. The sim assumes level ${Mechanics.MAX_CHARACTER_LEVEL}, so results will be too high.`,
+				});
+			}
+		} catch (e) {
+			new Toast({ variant: 'error', body: `Quick Sim couldn't import that character: ${e instanceof Error ? e.message : e}` });
+			return;
+		}
+
+		(this.rootElem.querySelector('.dps-action') as HTMLButtonElement | null)?.click();
+		const resultsTabLink = this.rootElem.querySelector('[data-bs-target="#detailed-results-tab-tab"]');
+		if (resultsTabLink) {
+			Tab.getOrCreateInstance(resultsTabLink).show();
+		}
 	}
 
 	private addSidebarComponents() {

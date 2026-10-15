@@ -23,33 +23,48 @@ export class IndividualAddonImporter<SpecType extends Spec> extends IndividualIm
 	}
 
 	async onImport(data: string) {
-		const importJson = JSON.parse(data);
-
-		// Parse all the settings.
-		const charClass = nameToClass((importJson['class'] as string) || '');
-		if (charClass == Class.ClassUnknown) {
-			throw new Error('Could not parse Class!');
-		}
-
-		const race = nameToRace((importJson['race'] as string) || '');
-		if (race == Race.RaceUnknown) {
-			throw new Error('Could not parse Race!');
-		}
-
-		const professions = (importJson['professions'] as Array<{ name: string; level: number }>).map(profData => nameToProfession(profData.name));
-		professions.forEach((prof, i) => {
-			if (prof == Profession.ProfessionUnknown) {
-				throw new Error(`Could not parse profession '${importJson['professions'][i]}'`);
-			}
-		});
-
-		const talentsStr = (importJson['talents'] as string) || '';
-
-		const gearJson = importJson['gear'];
-		delete gearJson.version;
-		gearJson.items = (gearJson.items as Array<any>).filter(item => item != null);
-		const equipmentSpec = EquipmentSpec.fromJson(gearJson);
-
-		this.finishIndividualImport(this.simUI, charClass, race, equipmentSpec, talentsStr, professions);
+		const parsed = parseAddonExport(data);
+		this.finishIndividualImport(this.simUI, parsed.charClass, parsed.race, parsed.equipmentSpec, parsed.talentsStr, parsed.professions);
 	}
+}
+
+export type AddonExport = {
+	charClass: Class;
+	race: Race;
+	level: number;
+	equipmentSpec: EquipmentSpec;
+	talentsStr: string;
+	professions: Array<Profession>;
+};
+
+// Parses the JSON the WoWSims Exporter addon produces (https://github.com/wowsims/exporter).
+export function parseAddonExport(data: string): AddonExport {
+	const importJson = JSON.parse(data);
+
+	// Parse all the settings.
+	const charClass = nameToClass((importJson['class'] as string) || '');
+	if (charClass == Class.ClassUnknown) {
+		throw new Error('Could not parse Class!');
+	}
+
+	const race = nameToRace((importJson['race'] as string) || '');
+	if (race == Race.RaceUnknown) {
+		throw new Error('Could not parse Race!');
+	}
+
+	const professions = ((importJson['professions'] as Array<{ name: string; level: number }>) || []).map(profData => nameToProfession(profData.name));
+	professions.forEach((prof, i) => {
+		if (prof == Profession.ProfessionUnknown) {
+			throw new Error(`Could not parse profession '${importJson['professions'][i]}'`);
+		}
+	});
+
+	const talentsStr = (importJson['talents'] as string) || '';
+
+	const gearJson = importJson['gear'];
+	delete gearJson.version;
+	gearJson.items = (gearJson.items as Array<any>).filter(item => item != null);
+	const equipmentSpec = EquipmentSpec.fromJson(gearJson);
+
+	return { charClass, race, level: Number(importJson['level']) || 0, equipmentSpec, talentsStr, professions };
 }

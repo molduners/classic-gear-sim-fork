@@ -11,8 +11,9 @@ export enum Phase {
 
 export const CURRENT_PHASE = Phase.Phase6;
 
-// Github pages serves our site under the /classic directory
-export const REPO_NAME = 'classic';
+// The site is served under /classic/ by default. Written as a path so that
+// tools/rebase_site.sh, which moves the built site to another path, updates it too.
+export const REPO_NAME = '/classic/'.split('/')[1];
 
 // Get 'elemental_shaman', the pathname part after the repo name
 const pathnameParts = window.location.pathname.split('/');
