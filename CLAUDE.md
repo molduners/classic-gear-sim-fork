@@ -7,9 +7,11 @@ decision at a time.
 
 ## Current milestone
 
-**Milestone 2: Warrior (Arms/Fury) validated** against WarriorSim within 3%
-(`validation/warrior`). Milestone 1 (fork and ruleset layer) is merged.
-Next: milestone 3, the Quick Sim web page.
+**Milestone 3: Quick Sim page.** The homepage takes a WoWSims Exporter addon string,
+opens the right spec page, imports the character over that page's defaults (full raid
+and world buffs) and runs the sim. Milestones 1 (fork, ruleset layer) and 2 (Warrior
+validated against WarriorSim within 3%, `validation/warrior`) are merged.
+Next: milestone 4, the Top Gear page.
 
 The full plan (architecture, milestones, coverage) is in the project's plan doc:
 https://claude.ai/code/artifact/61044d30-999a-4b64-9abf-ae7180a84baa
@@ -34,6 +36,10 @@ https://claude.ai/code/artifact/61044d30-999a-4b64-9abf-ae7180a84baa
 - `sim/ruleset/vanilla` – Classic Era ruleset.
 - `proto/` – shared data formats for engine and UI. `ui/` – web UI, one folder per spec.
 - `assets/database` – generated item, enchant and spell data (see `docs/database_updates.md`).
+- Quick Sim: `ui/homepage/quick_sim_box.ts` (homepage form) and `ui/core/quick_sim.ts` (picks the
+  spec page from class + talent points, hands the string over through sessionStorage and a
+  `?quicksim` flag). `IndividualSimUI.runQuickSim` imports it and runs the sim. Mark a spec
+  `validated: true` there once it is validated in `COVERAGE.md`.
 
 ### Ruleset layer: what is and isn't behind it yet
 
@@ -75,15 +81,19 @@ make
 ```
 
 To view the built site: `cd dist && python3 -m http.server 8080`, then open
-http://localhost:8080/classic/.
+http://localhost:8080/classic/. Test exporter string: `examples/exporter_fury_warrior.json`.
+
+The site has `/classic/` written into its HTML, CSS and JS. `tools/rebase_site.sh` moves a
+built site to another path (GitHub Pages serves it at `/<repo name>/`).
 
 ## GitHub
 
 - Repo: https://github.com/molduners/classic-gear-sim-fork (a copy of wowsims/classic with full history, not a GitHub fork).
 - CI: `run_tests.yml` builds and runs the tests on every pull request to `master`.
 - `sim.yml` ("Run a sim") runs one sim from the Actions tab, no local setup needed.
+- `deploy.yml` publishes the site to GitHub Pages on every merge to `master`:
+  https://molduners.github.io/classic-gear-sim-fork/ (needs Settings → Pages → Source: GitHub Actions).
 - Removed upstream workflows that deploy to the wowsims site, post to their Discord, or cut weekly releases.
-  Hosting our own site is a later decision.
 
 ## Testing rules
 

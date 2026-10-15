@@ -192,3 +192,33 @@
 		}
 	}
 }
+
+#homepage .quick-sim {
+	margin-bottom: var(--container-padding);
+	padding: var(--spacer-3);
+	max-width: 48rem;
+	background: rgba(0, 0, 0, 0.6);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+
+	.quick-sim-title {
+		margin-bottom: var(--spacer-2);
+	}
+
+	.quick-sim-input {
+		font-family: monospace;
+		font-size: 0.875rem;
+	}
+
+	.quick-sim-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--spacer-3);
+		margin-top: var(--spacer-2);
+	}
+
+	.quick-sim-note {
+		margin: var(--spacer-2) 0 0;
+		color: rgba(255, 255, 255, 0.7);
+	}
+}

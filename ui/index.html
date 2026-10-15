@@ -10,6 +10,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 		<link rel="stylesheet" href="/scss/homepage/index.scss" />
+		<script src="./homepage/quick_sim_box.ts" type="module"></script>
 		<link
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -73,10 +74,34 @@
 				<div class="container homepage-content-container">
 					<div class="info-container">
 						<p class="wowsims-info">
-							Welcome to WoWSims - Classic! This is a community-driven project to provide class and raid simulations for World of Warcraft®
-							Classic together with the leading theorycrafters and class representatives.
+							A gear simulator for World of Warcraft® Classic, built on
+							<a href="https://github.com/wowsims/classic" target="_blank">WoWSims Classic</a> by the WoWSims community.
 						</p>
 					</div>
+					<section class="quick-sim" aria-labelledby="quickSimTitle">
+						<h2 id="quickSimTitle" class="quick-sim-title">Quick Sim</h2>
+						<p class="quick-sim-help">
+							Install the
+							<a href="https://www.curseforge.com/wow/addons/wowsimsexporter" target="_blank">WoWSims Exporter</a>
+							addon, type <code>/wse export</code> in game, press Ctrl+C to copy the text and paste it here. You'll get your DPS with full raid
+							and world buffs, which you can change on the Settings tab.
+						</p>
+						<form class="quick-sim-form">
+							<textarea
+								class="quick-sim-input form-control"
+								rows="4"
+								spellcheck="false"
+								placeholder='{"class":"warrior","race":"Orc","talents":"…","gear":{…}}'
+								aria-label="Exporter text"></textarea>
+							<div class="quick-sim-actions">
+								<button type="submit" class="btn btn-primary quick-sim-button">Sim my character</button>
+								<span class="quick-sim-status" role="status"></span>
+							</div>
+						</form>
+						<p class="quick-sim-note">
+							Checked against an independent sim: Arms and Fury Warrior. Other specs run, but their numbers haven't been checked yet.
+						</p>
+					</section>
 					<div class="sim-links-container">
 						<!-- <div class="sim-links">
 							<a href="/classicic/raid/" class="sim-link raid-sim-link text-white">
