@@ -41,11 +41,16 @@ func GetRageConversion(attacker_level int32) float64 {
 		return 140.5 // Tested
 	} else if attacker_level < 45 {
 		// Poor fit, but better then current formula below 45
-		return 0.0215*float64(attacker_level^2) + 2.66*float64(attacker_level) + 0.89
+		lvl := float64(attacker_level)
+		return 0.0215*lvl*lvl + 2.66*lvl + 0.89
 	} else {
 		// Rage conversion is adjusted according to target stats (https://web.archive.org/web/20201118213002/https://blue.mmo-champion.com/topic/18325-the-new-rage-formula-by-kalgan/)\
 		// So this is probably only the base value formula and will be slightly wrong for most target
-		return 0.0091107836*float64(attacker_level^2) + 3.225598133*float64(attacker_level) + 4.2652911
+		// Note: this used to be written attacker_level^2, which in Go is XOR (60^2 == 62),
+		// giving 198.4 instead of 230.6 at level 60 and ~16% too much rage from damage dealt.
+		// Source for 230.6: https://bookdown.org/marrowwar/marrow_compendium/abilities.html (table 4.1)
+		lvl := float64(attacker_level)
+		return 0.0091107836*lvl*lvl + 3.225598133*lvl + 4.2652911
 	}
 }
 

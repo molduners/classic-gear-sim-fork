@@ -649,6 +649,8 @@ func (spell *Spell) outcomeEnemyMeleeWhite(sim *Simulation, result *SpellResult,
 
 func (result *SpellResult) applyAttackTableMiss(spell *Spell, attackTable *AttackTable, roll float64, chance *float64, countHits bool) bool {
 	missChance := attackTable.BaseMissChance - spell.PhysicalHitChance(attackTable)
+	// Dual wield adds 19% miss. Source: https://github.com/magey/classic-warrior/wiki/Attack-table
+	// UNCERTAIN: WarriorSim uses 0.8*miss + 20% instead; the two differ by under 1% at 300 skill.
 	if spell.Unit.AutoAttacks.IsDualWielding && !spell.Unit.PseudoStats.DisableDWMissPenalty {
 		missChance += 0.19
 	}

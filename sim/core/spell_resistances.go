@@ -84,7 +84,8 @@ func MultiSchoolShouldUseArmor(spell *Spell, target *Unit) bool {
 func (at *AttackTable) GetArmorDamageModifier() float64 {
 	armorPenRating := at.Attacker.stats[stats.ArmorPenetration]
 	defenderArmor := max(at.Defender.Armor()-armorPenRating, 0.0)
-	return 1 - defenderArmor/(defenderArmor+400+85*float64(at.Attacker.Level))
+	// Damage reduction from armor caps at 75%. Source: https://wow.allakhazam.com/wiki/Armor_(WoW)
+	return 1 - min(defenderArmor/(defenderArmor+400+85*float64(at.Attacker.Level)), 0.75)
 }
 
 func (at *AttackTable) GetPartialResistThresholds(spell *Spell, pureDot bool) (float64, float64, float64) {
