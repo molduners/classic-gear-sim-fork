@@ -616,6 +616,12 @@ message BulkComboResult {
     repeated ItemSpecWithSlot items_added = 1;
     UnitMetrics unit_metrics = 2;
 	TalentLoadout talent_loadout = 3;
+	// DPS gained over the equipped gear, compared run by run (both use the same random seed).
+	double dps_delta = 4;
+	// Standard error of dps_delta. A gain within about 2 of these is indistinguishable from noise.
+	double dps_delta_stderr = 5;
+	// Iterations this combo and its equipped-gear comparison ran.
+	int32 iterations = 6;
 }
 
 message ItemSpecWithSlot {

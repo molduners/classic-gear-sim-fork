@@ -222,3 +222,15 @@
 		color: rgba(255, 255, 255, 0.7);
 	}
 }
+
+#homepage .quick-sim-bags {
+	margin-top: var(--spacer-2);
+
+	summary {
+		cursor: pointer;
+	}
+
+	.quick-sim-help {
+		margin: var(--spacer-2) 0;
+	}
+}

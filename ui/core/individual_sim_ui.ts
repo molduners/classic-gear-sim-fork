@@ -9,6 +9,7 @@ import { BulkTab } from './components/individual_sim_ui/bulk_tab';
 import { Individual60UEPExporter, IndividualJsonExporter, IndividualLinkExporter, IndividualPawnEPExporter } from './components/individual_sim_ui/exporters';
 import { GearTab } from './components/individual_sim_ui/gear_tab';
 import { Individual60UImporter, IndividualAddonImporter, IndividualJsonImporter, IndividualLinkImporter } from './components/individual_sim_ui/importers';
+import { parseBagExport } from './components/individual_sim_ui/importers/bulk_gear_json_importer';
 import { parseAddonExport } from './components/individual_sim_ui/importers/individual_addon_importer';
 import { applyCharacterImport, showImportResultToast } from './components/individual_sim_ui/importers/individual_importer';
 import { ItemSwapConfig } from './components/individual_sim_ui/item_swap_picker';
@@ -37,6 +38,7 @@ import {
 	EquipmentSpec,
 	Faction,
 	IndividualBuffs,
+	ItemSpec,
 	PartyBuffs,
 	Profession,
 	PseudoStat,
@@ -50,7 +52,7 @@ import { ItemSwapGear } from './proto_utils/gear';
 import { professionNames } from './proto_utils/names';
 import { Stats, UnitStat } from './proto_utils/stats';
 import { getTalentPoints, isHealingSpec, isTankSpec, SpecOptions, SpecRotation, specToEligibleRaces, specToLocalStorageKey } from './proto_utils/utils';
-import { takeQuickSimImport } from './quick_sim';
+import { QuickSimImport, takeQuickSimImport } from './quick_sim';
 import { SimUI, SimWarning } from './sim_ui';
 import { EventID, TypedEvent } from './typed_event';
 
@@ -257,10 +259,10 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 			// This needs to go before all the UI components so that gear loading is the
 			// first callback invoked from waitForInit().
 			this.sim.waitForInit().then(() => {
-				const quickSimData = takeQuickSimImport(window.location);
-				this.loadSettings(quickSimData != null);
-				if (quickSimData != null) {
-					this.runQuickSim(quickSimData);
+				const quickSim = takeQuickSimImport(window.location);
+				this.loadSettings(quickSim != null);
+				if (quickSim != null) {
+					this.runQuickSim(quickSim);
 				}
 
 				if (isHealingSpec(this.player.spec)) {
@@ -321,10 +323,12 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 		});
 	}
 
-	// Imports a WoWSims Exporter string over the default settings, runs the sim and shows the results.
-	private async runQuickSim(data: string) {
+	// Imports a WoWSims Exporter string over the default settings, then runs the sim and shows the
+	// results, or runs Top Gear when bag items came with it.
+	private async runQuickSim(quickSim: QuickSimImport) {
+		let bagItems: Array<ItemSpec> = [];
 		try {
-			const imported = parseAddonExport(data);
+			const imported = parseAddonExport(quickSim.character);
 			const missing = await applyCharacterImport(
 				this,
 				imported.charClass,
@@ -340,8 +344,22 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 					body: `This character is level ${imported.level}. The sim assumes level ${Mechanics.MAX_CHARACTER_LEVEL}, so results will be too high.`,
 				});
 			}
+			if (quickSim.bags) {
+				bagItems = await parseBagExport(quickSim.bags);
+			}
 		} catch (e) {
 			new Toast({ variant: 'error', body: `Quick Sim couldn't import that character: ${e instanceof Error ? e.message : e}` });
+			return;
+		}
+
+		if (quickSim.bags) {
+			if (bagItems.length == 0) {
+				new Toast({ variant: 'error', body: "None of the bag items are in the sim's item list, so there's nothing for Top Gear to try." });
+				return;
+			}
+			this.bt.setItems(bagItems);
+			Tab.getOrCreateInstance(this.bt.navLink).show();
+			this.bt.run();
 			return;
 		}
 
@@ -383,12 +401,7 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 	}
 
 	private addBulkTab(): BulkTab {
-		const bulkTab = new BulkTab(this.simTabContentsContainer, this);
-		bulkTab.navLink.hidden = !this.sim.getShowExperimental();
-		this.sim.showExperimentalChangeEmitter.on(() => {
-			bulkTab.navLink.hidden = !this.sim.getShowExperimental();
-		});
-		return bulkTab;
+		return new BulkTab(this.simTabContentsContainer, this);
 	}
 
 	private addSettingsTab() {

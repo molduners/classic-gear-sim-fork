@@ -1,8 +1,10 @@
 // Quick Sim: paste a WoWSims Exporter addon string on the homepage, land on the right spec page,
 // import the character over that page's default settings and run the sim straight away.
+// With a bag export too, it runs Top Gear on those items instead.
 // Kept free of heavy imports so the homepage stays small.
 
 const STORAGE_KEY = 'quickSim__pendingImport';
+const BAGS_STORAGE_KEY = 'quickSim__pendingBags';
 const URL_PARAM = 'quicksim';
 
 export type QuickSimTarget = {
@@ -115,18 +117,47 @@ export function findQuickSimTarget(data: string): QuickSimTarget {
 	return { page: tree.page, label: `${tree.spec} ${entry.name}`, validated: !!tree.validated };
 }
 
-// Saves the string and returns the URL of the spec page that will pick it up.
-export function startQuickSim(data: string, target: QuickSimTarget, basePath: string): string {
+// Checks a bag export (the addon's "bags" output) enough to give the user a clear message.
+export function checkBagExport(data: string) {
+	let json: any;
+	try {
+		json = JSON.parse(data.trim());
+	} catch {
+		throw new Error("The bags text isn't a bag export. In the addon, use the bags export and copy all of it.");
+	}
+	if (!Array.isArray(json?.items) || json.items.length == 0) {
+		throw new Error('The bags text has no items in it.');
+	}
+	if (json.class) {
+		throw new Error('The bags box has your character export in it. Use the bags export there.');
+	}
+}
+
+// Saves the strings and returns the URL of the spec page that will pick them up.
+export function startQuickSim(data: string, target: QuickSimTarget, basePath: string, bags = ''): string {
 	window.sessionStorage.setItem(STORAGE_KEY, data.trim());
+	if (bags.trim()) {
+		window.sessionStorage.setItem(BAGS_STORAGE_KEY, bags.trim());
+	} else {
+		window.sessionStorage.removeItem(BAGS_STORAGE_KEY);
+	}
 	return `${basePath}${target.page}/?${URL_PARAM}`;
 }
 
-// On a spec page: returns the pending exporter string, if this page was opened by Quick Sim.
-// Only returns it once, and clears the URL flag so a reload doesn't re-import.
-export function takeQuickSimImport(location: Location): string | null {
+export type QuickSimImport = {
+	character: string;
+	// Bag export, when the user wants Top Gear.
+	bags: string | null;
+};
+
+// On a spec page: returns the pending exporter strings, if this page was opened by Quick Sim.
+// Only returns them once, and clears the URL flag so a reload doesn't re-import.
+export function takeQuickSimImport(location: Location): QuickSimImport | null {
 	if (!new URLSearchParams(location.search).has(URL_PARAM)) return null;
-	const data = window.sessionStorage.getItem(STORAGE_KEY);
+	const character = window.sessionStorage.getItem(STORAGE_KEY);
+	const bags = window.sessionStorage.getItem(BAGS_STORAGE_KEY);
 	window.sessionStorage.removeItem(STORAGE_KEY);
+	window.sessionStorage.removeItem(BAGS_STORAGE_KEY);
 	window.history.replaceState(null, '', location.pathname + location.hash);
-	return data;
+	return character == null ? null : { character, bags };
 }
