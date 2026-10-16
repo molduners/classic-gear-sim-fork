@@ -78,3 +78,14 @@
 		text-align: left;
 	}
 }
+
+.bulk-result-margin {
+	color: var(--bs-gray-500);
+	font-size: 0.8em;
+}
+
+.bulk-result-noise {
+	margin-left: var(--spacer-2);
+	align-self: center;
+	font-size: 0.75rem;
+}

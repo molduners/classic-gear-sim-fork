@@ -8,9 +8,12 @@ import { Component } from '../../component';
 import { ItemRenderer } from '../../gear_picker/gear_picker';
 
 export default class BulkSimResultRenderer extends Component {
-	constructor(parent: HTMLElement, simUI: IndividualSimUI<any>, result: BulkComboResult, baseResult: BulkComboResult) {
+	constructor(parent: HTMLElement, simUI: IndividualSimUI<any>, result: BulkComboResult) {
 		super(parent, '.bulk-sim-results');
-		const dpsDelta = result.unitMetrics!.dps!.avg! - baseResult.unitMetrics!.dps!.avg;
+		const dpsDelta = result.dpsDelta;
+		// About 95% of the time the true gain is within 2 standard errors of the measured one.
+		const margin = 2 * result.dpsDeltaStderr;
+		const withinNoise = !!result.itemsAdded?.length && Math.abs(dpsDelta) <= margin;
 
 		const equipButtonRef = ref<HTMLButtonElement>();
 		const dpsDeltaRef = ref<HTMLDivElement>();
@@ -23,7 +26,15 @@ export default class BulkSimResultRenderer extends Component {
 
 						<span ref={dpsDeltaRef} className={clsx(dpsDelta >= 0 ? 'bulk-result-header-positive' : 'bulk-result-header-negative')}>
 							{this.formatDpsDelta(dpsDelta)}
+							{margin > 0 && <span className="bulk-result-margin"> ± {this.formatDps(margin)}</span>}
 						</span>
+						{withinNoise && (
+							<span
+								className="bulk-result-noise badge bg-secondary"
+								title={`The gain is smaller than its margin of error after ${result.iterations} runs, so this could be no better than your current gear. Run more iterations to tell them apart.`}>
+								Too close to call
+							</span>
+						)}
 
 						<p className="talent-loadout-text">
 							{result.talentLoadout && typeof result.talentLoadout === 'object' ? (

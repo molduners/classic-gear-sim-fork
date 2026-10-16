@@ -1,6 +1,7 @@
 package core
 
 import (
+	"math"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -373,5 +374,101 @@ func TestGenerateAllEquipmentSubstitutions(t *testing.T) {
 				t.Errorf("generateAllEquipmentSubstitutions has incorrect number of items, expected: %d, got: %d", len(tt.want), idx)
 			}
 		})
+	}
+}
+
+func TestGenerateAllEquipmentSubstitutionsUsesEachBagItemOnce(t *testing.T) {
+	baseItems := make([]*proto.ItemSpec, len(proto.ItemSlot_name))
+	for i := range baseItems {
+		baseItems[i] = &proto.ItemSpec{Id: int32(i) + 1000}
+	}
+	// One one-handed weapon in the bags fits either hand, but can't be in both at once.
+	oneHander := &proto.ItemSpec{Id: 1}
+	results := generateAllEquipmentSubstitutions(simsignals.CreateSignals(), baseItems, true, []*itemWithSlot{
+		{Item: oneHander, Slot: proto.ItemSlot_ItemSlotMainHand},
+		{Item: oneHander, Slot: proto.ItemSlot_ItemSlotOffHand},
+	})
+	var got []int
+	for sub := range results {
+		got = append(got, len(sub.Items))
+	}
+	// Equipped gear, weapon in main hand, weapon in off hand.
+	if diff := cmp.Diff([]int{0, 1, 1}, got); diff != "" {
+		t.Fatalf("unexpected substitutions (-want +got):\n%s", diff)
+	}
+
+	// Two copies of the same weapon are two bag entries, so both hands are allowed.
+	copy1, copy2 := &proto.ItemSpec{Id: 1}, &proto.ItemSpec{Id: 1}
+	results = generateAllEquipmentSubstitutions(simsignals.CreateSignals(), baseItems, true, []*itemWithSlot{
+		{Item: copy1, Slot: proto.ItemSlot_ItemSlotMainHand},
+		{Item: copy1, Slot: proto.ItemSlot_ItemSlotOffHand},
+		{Item: copy2, Slot: proto.ItemSlot_ItemSlotMainHand},
+		{Item: copy2, Slot: proto.ItemSlot_ItemSlotOffHand},
+	})
+	bothHands := 0
+	for sub := range results {
+		if len(sub.Items) == 2 {
+			bothHands++
+		}
+	}
+	if bothHands == 0 {
+		t.Fatal("expected a substitution with a copy in each hand")
+	}
+}
+
+func TestItemComboCheckerKeysAreDistinct(t *testing.T) {
+	checker := ItemComboChecker{}
+	// The key used to shift by 4 bits, so (2, 16) and (32, 1) both became 48.
+	if checker.HasCombo(2, 16) {
+		t.Fatal("first pair reported as seen")
+	}
+	if checker.HasCombo(32, 1) {
+		t.Fatal("different pair reported as already seen")
+	}
+	if !checker.HasCombo(16, 2) {
+		t.Fatal("same pair in the other order not recognised")
+	}
+}
+
+func TestPairedDifference(t *testing.T) {
+	mean, stderr := pairedDifference([]float64{11, 12, 13, 14}, []float64{10, 10, 10, 10})
+	// Differences 1, 2, 3, 4: mean 2.5, sample stdev sqrt(5/3), stderr sqrt(5/3)/2.
+	if math.Abs(mean-2.5) > 1e-12 || math.Abs(stderr-math.Sqrt(5.0/3)/2) > 1e-12 {
+		t.Fatalf("pairedDifference = %v ± %v, want 2.5 ± %v", mean, stderr, math.Sqrt(5.0/3)/2)
+	}
+	if mean, stderr := pairedDifference(nil, nil); mean != 0 || stderr != 0 {
+		t.Fatalf("pairedDifference of nothing = %v ± %v, want 0 ± 0", mean, stderr)
+	}
+}
+
+func TestPruneBulkCombos(t *testing.T) {
+	combo := func(delta, stderr float64) *itemSubstitutionSimResult {
+		return &itemSubstitutionSimResult{DpsDelta: delta, DpsDeltaStderr: stderr}
+	}
+	ranked := []*itemSubstitutionSimResult{
+		combo(10, 1), // best
+		combo(8, 1),  // 2nd best: the cutoff when keeping 2
+		combo(5, 1),  // 3 behind, noise 3*sqrt(2) = 4.2: could still beat the cutoff
+		combo(1, 1),  // 7 behind: clearly worse
+	}
+	if got := len(pruneBulkCombos(ranked, 2)); got != 3 {
+		t.Fatalf("kept %d combos, want 3", got)
+	}
+	if got := len(pruneBulkCombos(ranked, 10)); got != 4 {
+		t.Fatalf("kept %d combos when all fit, want 4", got)
+	}
+}
+
+func TestClearAllValues(t *testing.T) {
+	result := &proto.RaidSimResult{RaidMetrics: &proto.RaidMetrics{
+		Dps:     &proto.DistributionMetrics{Avg: 5, AllValues: []float64{4, 6}},
+		Parties: []*proto.PartyMetrics{{Players: []*proto.UnitMetrics{{Dps: &proto.DistributionMetrics{Avg: 5, AllValues: []float64{4, 6}}}}}},
+	}}
+	clearAllValues(result.ProtoReflect())
+	if len(result.RaidMetrics.Dps.AllValues) != 0 || len(result.RaidMetrics.Parties[0].Players[0].Dps.AllValues) != 0 {
+		t.Fatal("per-iteration values not cleared")
+	}
+	if result.RaidMetrics.Parties[0].Players[0].Dps.Avg != 5 {
+		t.Fatal("cleared more than the per-iteration values")
 	}
 }

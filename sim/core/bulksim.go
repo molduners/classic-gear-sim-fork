@@ -11,6 +11,7 @@ import (
 	"time"
 
 	goproto "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/wowsims/classic/sim/core/proto"
 	"github.com/wowsims/classic/sim/core/simsignals"
@@ -133,6 +134,7 @@ func (b *bulkSimRunner) Run(signals simsignals.Signals, progress chan *proto.Pro
 
 	allCombos := generateAllEquipmentSubstitutions(signals, baseItems, b.Request.BulkSettings.Combinations, distinctItemSlotCombos)
 
+	var baseCombo *singleBulkSim
 	var validCombos []singleBulkSim
 	count := 0
 	for sub := range allCombos {
@@ -141,75 +143,15 @@ func (b *bulkSimRunner) Run(signals simsignals.Signals, progress chan *proto.Pro
 			panic("over 1 million combos, abandoning attempt")
 		}
 		substitutedRequest, changeLog := createNewRequestWithSubstitution(b.Request.BaseSettings, sub, b.Request.BulkSettings.AutoEnchant)
-		if isValidEquipment(substitutedRequest.Raid.Parties[0].Players[0].Equipment) {
-			validCombos = append(validCombos, singleBulkSim{req: substitutedRequest, cl: changeLog, eq: sub})
+		combo := singleBulkSim{req: substitutedRequest, cl: changeLog, eq: sub}
+		if !sub.HasItemReplacements() {
+			// The equipped gear. Every other combo is measured against it.
+			baseCombo = &combo
+		} else if isValidEquipment(substitutedRequest.Raid.Parties[0].Players[0].Equipment) {
+			validCombos = append(validCombos, combo)
 		}
 	}
-
-	// TODO(Riotdog-GehennasEU): Make this configurable?
-	maxResults := 30
-
-	var rankedResults []*itemSubstitutionSimResult
-	var baseResult *itemSubstitutionSimResult
-	newIters := int64(iterations)
-	if b.Request.BulkSettings.FastMode {
-		newIters /= 100
-
-		// In fast mode try to keep starting iterations between 50 and 1000.
-		if newIters < 50 {
-			newIters = 50
-		}
-		if newIters > 1000 {
-			newIters = 1000
-		}
-	}
-
-	maxIterations := newIters * int64(len(validCombos))
-	if maxIterations > math.MaxInt32 {
-		return &proto.BulkSimResult{
-			Error: &proto.ErrorOutcome{Message: fmt.Sprintf("number of total iterations %d too large", maxIterations)},
-		}
-	}
-
-	for {
-		var tempBase *itemSubstitutionSimResult
-		var errorOutcome *proto.ErrorOutcome
-		// TODO: we could theoretically make getRankedResults accept a channel of validCombos that stream in to it and launches sims as it gets them...
-		rankedResults, tempBase, errorOutcome = b.getRankedResults(signals, validCombos, newIters, progress)
-
-		if errorOutcome != nil {
-			return &proto.BulkSimResult{Error: errorOutcome}
-		}
-		// keep replacing the base result with more refined base until we don't have base in the ranked results anymore.
-		if tempBase != nil {
-			baseResult = tempBase
-		}
-
-		// If we aren't doing fast mode, or if halving our results will be less than the maxResults, be done.
-		if !b.Request.BulkSettings.FastMode || len(rankedResults) <= maxResults*2 {
-			break
-		}
-
-		// we have reached max accuracy now
-		if newIters >= int64(iterations) {
-			break
-		}
-
-		// Increase accuracy
-		newIters *= 2
-		newNumCombos := len(rankedResults) / 2
-		validCombos = validCombos[:newNumCombos]
-		rankedResults = rankedResults[:newNumCombos]
-		for i, comb := range rankedResults {
-			validCombos[i] = singleBulkSim{
-				req: comb.Request,
-				cl:  comb.ChangeLog,
-				eq:  comb.Substitution,
-			}
-		}
-	}
-
-	if baseResult == nil {
+	if baseCombo == nil {
 		return &proto.BulkSimResult{
 			Error: &proto.ErrorOutcome{
 				Message: "no base result for equipped gear found in bulk sim",
@@ -217,33 +159,61 @@ func (b *bulkSimRunner) Run(signals simsignals.Signals, progress chan *proto.Pro
 		}
 	}
 
+	// TODO(Riotdog-GehennasEU): Make this configurable?
+	maxResults := 30
+
+	newIters := int64(iterations)
+	if b.Request.BulkSettings.FastMode {
+		newIters /= 100
+
+		// In fast mode try to keep starting iterations between 50 and 1000.
+		newIters = min(max(newIters, 50), 1000, int64(iterations))
+	}
+
+	maxIterations := newIters * int64(len(validCombos)+1)
+	if maxIterations > math.MaxInt32 {
+		return &proto.BulkSimResult{
+			Error: &proto.ErrorOutcome{Message: fmt.Sprintf("number of total iterations %d too large", maxIterations)},
+		}
+	}
+
+	// Fast mode sims every combo with few iterations, drops the ones that are clearly worse than
+	// the top results, and repeats with more iterations until the survivors get the full count.
+	var rankedResults []*itemSubstitutionSimResult
+	var baseResult *itemSubstitutionSimResult
+	for {
+		var errorOutcome *proto.ErrorOutcome
+		rankedResults, baseResult, errorOutcome = b.getRankedResults(signals, *baseCombo, validCombos, newIters, progress)
+		if errorOutcome != nil {
+			return &proto.BulkSimResult{Error: errorOutcome}
+		}
+
+		if !b.Request.BulkSettings.FastMode || newIters >= int64(iterations) {
+			break
+		}
+
+		validCombos = pruneBulkCombos(rankedResults, maxResults)
+		if len(validCombos) <= maxResults {
+			newIters = int64(iterations)
+		} else {
+			newIters = min(newIters*2, int64(iterations))
+		}
+	}
+
+	// The equipped gear is listed among the results too, wherever it ranks.
+	rankedResults = append(rankedResults, baseResult)
+	sort.SliceStable(rankedResults, func(i, j int) bool {
+		return rankedResults[i].Score() > rankedResults[j].Score()
+	})
 	if len(rankedResults) > maxResults {
 		rankedResults = rankedResults[:maxResults]
 	}
 
-	bum := baseResult.Result.GetRaidMetrics().GetParties()[0].GetPlayers()[0]
-	bum.Actions = nil
-	bum.Auras = nil
-	bum.Resources = nil
-	bum.Pets = nil
-
 	result = &proto.BulkSimResult{
-		EquippedGearResult: &proto.BulkComboResult{
-			UnitMetrics: bum,
-		},
+		EquippedGearResult: baseResult.toProto(int32(newIters)),
 	}
-
 	for _, r := range rankedResults {
-		um := r.Result.GetRaidMetrics().GetParties()[0].GetPlayers()[0]
-		um.Actions = nil
-		um.Auras = nil
-		um.Resources = nil
-		um.Pets = nil
-
-		result.Results = append(result.Results, &proto.BulkComboResult{
-			ItemsAdded:  r.ChangeLog.AddedItems,
-			UnitMetrics: um,
-		})
+		result.Results = append(result.Results, r.toProto(int32(newIters)))
 	}
 
 	if progress != nil {
@@ -255,7 +225,25 @@ func (b *bulkSimRunner) Run(signals simsignals.Signals, progress chan *proto.Pro
 	return result
 }
 
-func (b *bulkSimRunner) getRankedResults(signals simsignals.Signals, validCombos []singleBulkSim, iterations int64, progress chan *proto.ProgressMetrics) ([]*itemSubstitutionSimResult, *itemSubstitutionSimResult, *proto.ErrorOutcome) {
+// pruneBulkCombos keeps the combos that could still make the top maxResults: those whose gap to
+// the maxResults-th best is within 3 standard errors. ranked must be sorted best first.
+func pruneBulkCombos(ranked []*itemSubstitutionSimResult, maxResults int) []singleBulkSim {
+	cutoff := ranked[min(maxResults, len(ranked))-1]
+	var kept []singleBulkSim
+	for _, r := range ranked {
+		gap := cutoff.DpsDelta - r.DpsDelta
+		noise := math.Sqrt(r.DpsDeltaStderr*r.DpsDeltaStderr + cutoff.DpsDeltaStderr*cutoff.DpsDeltaStderr)
+		if gap <= 3*noise {
+			kept = append(kept, singleBulkSim{req: r.Request, cl: r.ChangeLog, eq: r.Substitution})
+		}
+	}
+	return kept
+}
+
+// getRankedResults sims the equipped gear, then every combo with the same iterations and random
+// seed, and measures each combo's DPS gain over the equipped gear run by run. Returns the combos
+// sorted best first, and the equipped gear's result.
+func (b *bulkSimRunner) getRankedResults(signals simsignals.Signals, base singleBulkSim, validCombos []singleBulkSim, iterations int64, progress chan *proto.ProgressMetrics) ([]*itemSubstitutionSimResult, *itemSubstitutionSimResult, *proto.ErrorOutcome) {
 	concurrency := runtime.NumCPU() + 1
 	if concurrency <= 0 {
 		concurrency = 2
@@ -268,13 +256,14 @@ func (b *bulkSimRunner) getRankedResults(signals simsignals.Signals, validCombos
 
 	results := make(chan *itemSubstitutionSimResult, 10)
 
-	numCombinations := int32(len(validCombos))
+	numCombinations := int32(len(validCombos) + 1)
 	totalIterationsUpperBound := int64(numCombinations) * iterations
 
 	var totalCompletedIterations int32
 	var totalCompletedSims int32
 
 	reporterSignal := simsignals.CreateSignals()
+	defer reporterSignal.Abort.Trigger() // cancel reporter
 
 	// reporter for all sims combined.
 	go func() {
@@ -287,69 +276,127 @@ func (b *bulkSimRunner) getRankedResults(signals simsignals.Signals, validCombos
 				return
 			}
 
-			progress <- &proto.ProgressMetrics{
-				TotalSims:           numCombinations,
-				CompletedSims:       complSims,
-				CompletedIterations: complIters,
-				TotalIterations:     int32(totalIterationsUpperBound),
+			if progress != nil {
+				progress <- &proto.ProgressMetrics{
+					TotalSims:           numCombinations,
+					CompletedSims:       complSims,
+					CompletedIterations: complIters,
+					TotalIterations:     int32(totalIterationsUpperBound),
+				}
 			}
 			time.Sleep(time.Second)
 		}
 	}()
 
+	runCombo := func(sub singleBulkSim) *itemSubstitutionSimResult {
+		singleSimProgress := make(chan *proto.ProgressMetrics)
+		// watches this progress and pushes up to main reporter.
+		go func() {
+			var prevDone int32
+			for p := range singleSimProgress {
+				delta := p.CompletedIterations - prevDone
+				atomic.AddInt32(&totalCompletedIterations, delta)
+				prevDone = p.CompletedIterations
+				if p.FinalRaidResult != nil {
+					break
+				}
+			}
+		}()
+		// overwrite the requests iterations with the input for this function.
+		sub.req.SimOptions.Iterations = int32(iterations)
+		// Keep each iteration's DPS so combos can be compared with the equipped gear run by run.
+		sub.req.SimOptions.SaveAllValues = true
+		result := &itemSubstitutionSimResult{
+			Request:      sub.req,
+			Result:       b.SingleRaidSimRunner(sub.req, singleSimProgress, false, signals),
+			Substitution: sub.eq,
+			ChangeLog:    sub.cl,
+		}
+		atomic.AddInt32(&totalCompletedSims, 1)
+		return result
+	}
+
+	baseResult := runCombo(base)
+	if baseResult.Result == nil || baseResult.Result.Error != nil {
+		return nil, nil, baseResult.Result.GetError()
+	}
+	baseValues := baseResult.playerDps().GetAllValues()
+
 	// launcher for all combos (limited by concurrency max)
 	go func() {
 		for _, singleCombo := range validCombos {
 			<-tickets
-			singleSimProgress := make(chan *proto.ProgressMetrics)
-			// watches this progress and pushes up to main reporter.
-			go func(prog chan *proto.ProgressMetrics) {
-				var prevDone int32
-				for p := range singleSimProgress {
-					delta := p.CompletedIterations - prevDone
-					atomic.AddInt32(&totalCompletedIterations, delta)
-					prevDone = p.CompletedIterations
-					if p.FinalRaidResult != nil {
-						break
-					}
-				}
-			}(singleSimProgress)
-			// actually run the sim in here.
 			go func(sub singleBulkSim) {
-				// overwrite the requests iterations with the input for this function.
-				sub.req.SimOptions.Iterations = int32(iterations)
-				results <- &itemSubstitutionSimResult{
-					Request:      sub.req,
-					Result:       b.SingleRaidSimRunner(sub.req, singleSimProgress, false, signals),
-					Substitution: sub.eq,
-					ChangeLog:    sub.cl,
-				}
-				atomic.AddInt32(&totalCompletedSims, 1)
+				results <- runCombo(sub)
 				tickets <- struct{}{} // when done, allow for new sim to be launched.
 			}(singleCombo)
 		}
 	}()
 
-	rankedResults := make([]*itemSubstitutionSimResult, numCombinations)
-	var baseResult *itemSubstitutionSimResult
-
+	rankedResults := make([]*itemSubstitutionSimResult, len(validCombos))
 	for i := range rankedResults {
 		result := <-results
 		if result.Result == nil || result.Result.Error != nil {
-			reporterSignal.Abort.Trigger() // cancel reporter
-			return nil, nil, result.Result.Error
+			return nil, nil, result.Result.GetError()
 		}
-		if !result.Substitution.HasItemReplacements() {
-			baseResult = result
-		}
+		result.DpsDelta, result.DpsDeltaStderr = pairedDifference(result.playerDps().GetAllValues(), baseValues)
+		clearAllValues(result.Result.ProtoReflect())
 		rankedResults[i] = result
 	}
-	reporterSignal.Abort.Trigger() // cancel reporter
+	clearAllValues(baseResult.Result.ProtoReflect())
 
 	sort.Slice(rankedResults, func(i, j int) bool {
 		return rankedResults[i].Score() > rankedResults[j].Score()
 	})
 	return rankedResults, baseResult, nil
+}
+
+// pairedDifference returns the mean of a[i]-b[i] and its standard error. Runs with the same index
+// used the same random seed, so pairing them cancels much of the noise both share.
+func pairedDifference(a, b []float64) (mean float64, stderr float64) {
+	n := min(len(a), len(b))
+	if n == 0 {
+		return 0, 0
+	}
+	for i := 0; i < n; i++ {
+		mean += a[i] - b[i]
+	}
+	mean /= float64(n)
+	if n == 1 {
+		return mean, 0
+	}
+	var sumSq float64
+	for i := 0; i < n; i++ {
+		d := a[i] - b[i] - mean
+		sumSq += d * d
+	}
+	return mean, math.Sqrt(sumSq / float64(n-1) / float64(n))
+}
+
+// clearAllValues drops the per-iteration values from every distribution in a result, so a large
+// bulk sim doesn't hold them all in memory.
+func clearAllValues(m protoreflect.Message) {
+	m.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		switch {
+		case fd.Name() == "all_values":
+			m.Clear(fd)
+		case fd.Kind() != protoreflect.MessageKind:
+		case fd.IsList():
+			for i := 0; i < v.List().Len(); i++ {
+				clearAllValues(v.List().Get(i).Message())
+			}
+		case fd.IsMap():
+			v.Map().Range(func(_ protoreflect.MapKey, mv protoreflect.Value) bool {
+				if fd.MapValue().Kind() == protoreflect.MessageKind {
+					clearAllValues(mv.Message())
+				}
+				return true
+			})
+		default:
+			clearAllValues(v.Message())
+		}
+		return true
+	})
 }
 
 // itemSubstitutionSimResult stores the request and response of a simulation, along with the used
@@ -360,6 +407,29 @@ type itemSubstitutionSimResult struct {
 	Result       *proto.RaidSimResult
 	Substitution *equipmentSubstitution
 	ChangeLog    *raidSimRequestChangeLog
+
+	// DPS gained over the equipped gear, and its standard error.
+	DpsDelta       float64
+	DpsDeltaStderr float64
+}
+
+func (r *itemSubstitutionSimResult) playerDps() *proto.DistributionMetrics {
+	return r.Result.GetRaidMetrics().GetParties()[0].GetPlayers()[0].GetDps()
+}
+
+func (r *itemSubstitutionSimResult) toProto(iterations int32) *proto.BulkComboResult {
+	um := r.Result.GetRaidMetrics().GetParties()[0].GetPlayers()[0]
+	um.Actions = nil
+	um.Auras = nil
+	um.Resources = nil
+	um.Pets = nil
+	return &proto.BulkComboResult{
+		ItemsAdded:     r.ChangeLog.AddedItems,
+		UnitMetrics:    um,
+		DpsDelta:       r.DpsDelta,
+		DpsDeltaStderr: r.DpsDeltaStderr,
+		Iterations:     iterations,
+	}
 }
 
 // Score used to rank results.
@@ -373,6 +443,16 @@ func (r *itemSubstitutionSimResult) Score() float64 {
 // equipmentSubstitution specifies all items to be used as replacements for the equipped gear.
 type equipmentSubstitution struct {
 	Items []*itemWithSlot
+}
+
+// usesItem returns true if this exact bag item is already used in another slot.
+func (es *equipmentSubstitution) usesItem(item *proto.ItemSpec) bool {
+	for _, repl := range es.Items {
+		if repl.Item == item {
+			return true
+		}
+	}
+	return false
 }
 
 // HasChanges returns true if the equipment substitution has any item replacmenets.
@@ -557,6 +637,11 @@ func shouldSkipCombo(baseItems []*proto.ItemSpec, item *proto.ItemSpec, slot pro
 func genSlotCombos(slot proto.ItemSlot, baseItems []*proto.ItemSpec, baseRepl equipmentSubstitution, replaceBySlot [][]*proto.ItemSpec, comboChecker SubstitutionComboChecker, results chan *equipmentSubstitution) {
 	// Iterate all items in this slot, add to the baseRepl, then descend to add all other item combos.
 	for _, item := range replaceBySlot[slot] {
+		// A bag item can fit several slots (e.g. a one-hander in main or off hand), but there is only
+		// one of it. Each bag item is a single *ItemSpec shared by all its slots, so compare pointers.
+		if baseRepl.usesItem(item) {
+			continue
+		}
 		// Create a new equipment substitution from the current replacements plus the new item.
 		combo := createReplacement(baseRepl, &itemWithSlot{Slot: slot, Item: item})
 		if comboChecker.HasCombo(combo) {
@@ -637,10 +722,11 @@ func (ic *ItemComboChecker) HasCombo(itema int32, itemb int32) bool {
 
 // put this function on ic just so it isn't in global namespace
 func (ic *ItemComboChecker) generateComboKey(itemA int32, itemB int32) int64 {
+	// Item IDs are 32 bits, so shift by 32 to keep every pair distinct.
 	if itemA > itemB {
-		return int64(itemA) + int64(itemB)<<4
+		return int64(itemA) + int64(itemB)<<32
 	}
-	return int64(itemB) + int64(itemA)<<4
+	return int64(itemB) + int64(itemA)<<32
 }
 
 type SubstitutionComboChecker map[string]struct{}

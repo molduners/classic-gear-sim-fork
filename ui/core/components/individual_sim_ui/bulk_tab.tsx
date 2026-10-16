@@ -43,9 +43,10 @@ export class BulkTab extends SimTab {
 	private autoEnchant: boolean;
 	private savedTalents: TalentLoadout[];
 	readonly selectorModal: SelectorModal;
+	private runButton: HTMLButtonElement | null = null;
 
 	constructor(parentElem: HTMLElement, simUI: IndividualSimUI<any>) {
-		super(parentElem, simUI, { identifier: 'bulk-tab', title: 'Batch' });
+		super(parentElem, simUI, { identifier: 'bulk-tab', title: 'Top Gear' });
 		this.simUI = simUI;
 
 		this.leftPanel = (<div className="bulk-tab-left tab-panel-left">{this.column1}</div>) as HTMLDivElement;
@@ -137,6 +138,11 @@ export class BulkTab extends SimTab {
 		return itemsDb;
 	}
 
+	// Starts Top Gear, as if the Run Top Gear button was clicked.
+	run() {
+		this.runButton?.click();
+	}
+
 	addItem(item: ItemSpec) {
 		this.addItems([item]);
 	}
@@ -203,7 +209,7 @@ export class BulkTab extends SimTab {
 			if (result.error?.type == ErrorOutcomeType.ErrorOutcomeAborted) {
 				new Toast({
 					variant: 'info',
-					body: 'Bulk sim cancelled.',
+					body: 'Top Gear cancelled.',
 				});
 			}
 		} catch (e) {
@@ -220,8 +226,8 @@ export class BulkTab extends SimTab {
 		const itemTextIntro = (
 			<div className="bulk-items-text-line">
 				<i>
-					Notice: This is under very early but active development and experimental. You may also need to update your WoW AddOn if you want to import
-					your bags.
+					Add items from your bags (Import From Bags takes the WoWSims Exporter addon's bag export) and Top Gear sims every combination with your
+					equipped gear.
 				</i>
 			</div>
 		);
@@ -273,7 +279,7 @@ export class BulkTab extends SimTab {
 					header: { title: '' },
 					bodyClasses: ['bulk-results-body'],
 				});
-				new BulkSimResultRenderer(resultBlock.bodyElement, this.simUI, r, bulkSimResult.equippedGearResult!);
+				new BulkSimResultRenderer(resultBlock.bodyElement, this.simUI, r);
 			}
 		});
 
@@ -281,7 +287,8 @@ export class BulkTab extends SimTab {
 			header: { title: 'Setup' },
 		});
 
-		const bulkSimButton = (<button className="btn btn-primary w-100 bulk-settings-button">Simulate Batch</button>) as HTMLButtonElement;
+		const bulkSimButton = (<button className="btn btn-primary w-100 bulk-settings-button">Run Top Gear</button>) as HTMLButtonElement;
+		this.runButton = bulkSimButton;
 
 		let isRunning = false;
 		bulkSimButton.addEventListener('click', async () => {
@@ -321,8 +328,7 @@ export class BulkTab extends SimTab {
 				});
 
 				let simStart = new Date().getTime();
-				let lastTotal = 0;
-				let rounds = 0;
+				let lastCompleted = 0;
 				let currentRound = 0;
 				let combinations = 0;
 
@@ -333,19 +339,17 @@ export class BulkTab extends SimTab {
 					if (combinations === 0) {
 						combinations = progressMetrics.totalSims;
 					}
+					// Fast mode runs in rounds, each with more iterations on the combos still in contention.
+					// A new round starts its counts from zero.
 					if (this.fastMode) {
-						if (rounds === 0 && progressMetrics.totalSims > 0) {
-							rounds = Math.ceil(Math.log(progressMetrics.totalSims / 20) / Math.log(2)) + 1;
-							currentRound = 1;
-						}
-						if (progressMetrics.totalSims < lastTotal) {
+						if (currentRound === 0 || progressMetrics.completedSims < lastCompleted) {
 							currentRound += 1;
 							simStart = new Date().getTime();
 						}
 					}
 
-					this.setSimProgress(progressMetrics, iterPerSecond, currentRound, rounds, combinations);
-					lastTotal = progressMetrics.totalSims;
+					this.setSimProgress(progressMetrics, iterPerSecond, currentRound, combinations);
+					lastCompleted = progressMetrics.completedSims;
 				});
 			} catch (error) {
 				console.error(error);
@@ -609,19 +613,13 @@ export class BulkTab extends SimTab {
 		});
 	}
 
-	private setSimProgress(progress: ProgressMetrics, iterPerSecond: number, currentRound: number, rounds: number, combinations: number) {
+	private setSimProgress(progress: ProgressMetrics, iterPerSecond: number, currentRound: number, combinations: number) {
 		const secondsRemain = ((progress.totalIterations - progress.completedIterations) / iterPerSecond).toFixed();
 
 		this.pendingResults.setContent(
 			<div className="results-sim">
 				<div>{combinations} total combinations.</div>
-				<div>
-					{rounds > 0 && (
-						<>
-							{currentRound} / {rounds} refining rounds
-						</>
-					)}
-				</div>
+				<div>{currentRound > 0 && <>Refining round {currentRound}</>}</div>
 				<div>
 					{progress.completedSims} / {progress.totalSims}
 					<br />

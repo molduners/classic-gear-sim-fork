@@ -7,11 +7,13 @@ decision at a time.
 
 ## Current milestone
 
-**Milestone 3: Quick Sim page.** The homepage takes a WoWSims Exporter addon string,
-opens the right spec page, imports the character over that page's defaults (full raid
-and world buffs) and runs the sim. Milestones 1 (fork, ruleset layer) and 2 (Warrior
-validated against WarriorSim within 3%, `validation/warrior`) are merged.
-Next: milestone 4, the Top Gear page.
+**Milestone 4: Top Gear.** The spec page's Top Gear tab (WoWSims' bulk sim) ranks every
+valid combination of bag items against the equipped gear. Each gain has a ± margin from a
+same-seed paired comparison, and gains inside it are flagged "Too close to call". Quick Sim
+takes an optional bag export and opens straight into Top Gear. Milestones 1 (fork, ruleset
+layer), 2 (Warrior validated against WarriorSim, `validation/warrior`) and 3 (Quick Sim
+page, GitHub Pages) are merged.
+Next: milestone 5 (healing/tanking, other specs, more versions, polish).
 
 The full plan (architecture, milestones, coverage) is in the project's plan doc:
 https://claude.ai/code/artifact/61044d30-999a-4b64-9abf-ae7180a84baa
@@ -40,6 +42,12 @@ https://claude.ai/code/artifact/61044d30-999a-4b64-9abf-ae7180a84baa
   spec page from class + talent points, hands the string over through sessionStorage and a
   `?quicksim` flag). `IndividualSimUI.runQuickSim` imports it and runs the sim. Mark a spec
   `validated: true` there once it is validated in `COVERAGE.md`.
+- Top Gear: `sim/core/bulksim.go` runs every combo with the same seed as the equipped gear
+  and reports `dps_delta` ± `dps_delta_stderr` from the run-by-run differences. Fast mode
+  starts at few iterations and keeps any combo within 3 standard errors of the 30th best,
+  doubling until 30 remain. UI: `bulk_tab.tsx` and `bulk/bulk_sim_result_renderer.tsx`.
+  `validation/warrior/top_gear_test.go` checks it against plain sims. The whole bulk sim
+  runs in one web worker, so large bags are slow in the browser.
 
 ### Ruleset layer: what is and isn't behind it yet
 

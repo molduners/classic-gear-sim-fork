@@ -1,5 +1,5 @@
 import { IndividualSimUI } from '../../../individual_sim_ui';
-import { EquipmentSpec, Spec } from '../../../proto/common';
+import { EquipmentSpec, ItemSpec, Spec } from '../../../proto/common';
 import { Database } from '../../../proto_utils/database';
 import { BulkTab } from '../bulk_tab';
 import { IndividualImporter } from './individual_importer';
@@ -21,13 +21,9 @@ export class BulkGearJsonImporter<SpecType extends Spec> extends IndividualImpor
 
 	async onImport(data: string) {
 		try {
-			const equipment = EquipmentSpec.fromJsonString(data, { ignoreUnknownFields: true });
-			if (equipment?.items?.length > 0) {
-				const db = await Database.loadLeftoversIfNecessary(equipment);
-				const items = equipment.items.filter(spec => spec.id > 0 && db.lookupItemSpec(spec));
-				if (items.length > 0) {
-					this.bulkUI.addItems(items);
-				}
+			const items = await parseBagExport(data);
+			if (items.length > 0) {
+				this.bulkUI.addItems(items);
 			}
 			this.close();
 		} catch (e: any) {
@@ -35,4 +31,14 @@ export class BulkGearJsonImporter<SpecType extends Spec> extends IndividualImpor
 			alert(e.toString());
 		}
 	}
+}
+
+// Parses the WoWSims Exporter addon's bag export. Returns the items the sim's database knows.
+export async function parseBagExport(data: string): Promise<Array<ItemSpec>> {
+	const equipment = EquipmentSpec.fromJsonString(data, { ignoreUnknownFields: true });
+	if (!(equipment?.items?.length > 0)) {
+		return [];
+	}
+	const db = await Database.loadLeftoversIfNecessary(equipment);
+	return equipment.items.filter(spec => spec.id > 0 && db.lookupItemSpec(spec));
 }
