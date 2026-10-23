@@ -14,7 +14,7 @@ fixed-seed regression snapshot exists; that catches changes, not inaccuracy.
 | Class | Spec | Role | WoWSims label | Golden test | Our status | Reference / tolerance | Known approximations |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Warrior | Arms / Fury | DPS | Alpha | Yes | **Validated** | WarriorSim, within 3% (all six scenarios within 2%); see `validation/warrior` | UNCERTAIN: Deep Wounds from off-hand crits, dual wield miss formula, where crit suppression applies. Execute phase not validated yet. |
-| Warrior | Protection | Tank | Alpha | Yes | Not started | – | – |
+| Warrior | Protection | Tank | Alpha | Yes | **Mechanics verified** | Threat of each ability matches in-game measurements (classic-warrior wiki, patch 1.13.6) exactly; the boss's hit table and damage taken match hand calculations (within 3 standard errors and 0.5%); see `validation/warrior/tank_test.go` | UNCERTAIN: Shield Slam adds block value once (Era tooltip; no in-game test). Rotation not compared with another sim. Battle Shout threat assumes a full party of 5. Set bonuses not checked. |
 | Rogue | Combat / Daggers | DPS | Alpha | Yes | Not started | – | – |
 | Mage | Fire / Frost | DPS | Alpha | Yes | Not started | – | – |
 | Warlock | Destruction / Affliction | DPS | Alpha | Yes | Not started | – | – |
@@ -36,6 +36,7 @@ fixed-seed regression snapshot exists; that catches changes, not inaccuracy.
 
 - Rage from damage was about 16% too high (`^` used as "squared" in Go). Affects every rage user.
 - Armour reduction now caps at 75%.
+- Shield Slam used the Season of Discovery version: twice the block value, extra attack power scaling and double threat. Now the Era version.
 
 ## Other versions
 

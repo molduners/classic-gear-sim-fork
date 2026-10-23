@@ -50,14 +50,32 @@ are marked `UNCERTAIN` in the code, and all are listed in `COVERAGE.md`.
 - **Off-hand white damage** is about 5% higher in ours, and we cast slightly more
   Heroic Strikes. Both follow from the items above.
 
+## Protection (tanking)
+
+There is no independent tank sim to compare against, so `tank_test.go` checks the pieces
+against in-game measurements and hand calculations instead. It uses the Protection
+rotation and pre-raid gear from `ui/tank_warrior`, Human, no buffs, against a level 63
+boss with 3731 armour hitting for 1500 to 2000 every 2 seconds.
+
+- **Threat:** each ability's threat equals (damage × multiplier + bonus threat per landed
+  hit) × 1.495 (Defensive Stance with 5/5 Defiance), using the values the
+  [classic-warrior project measured in game](https://github.com/magey/classic-warrior/wiki/Threat-Mechanics):
+  Revenge 270 and ×2.25, Shield Slam 254, Sunder Armor 261. Rage from Bloodrage and
+  Shield Specialization gives 5 threat per rage, unaffected by stance.
+- **Boss hit table:** miss, dodge, parry, block, crit and crushing blow rates from the
+  character sheet, within 3 standard errors over 122,000 swings.
+- **Damage taken:** matches armour, Defensive Stance, crits, crushing blows and block value
+  worked out by hand, within 0.5% (currently 0.03%).
+
 ## Not covered yet
 
 - The execute phase (all scenarios set it to 0%).
 - Enchants, world buffs, weapon imbues, other trinkets and set bonuses.
-- Protection warrior.
 
 ## Bugs this found
 
 - Rage from damage used `^` (bitwise XOR in Go) where it meant "squared", which gave
   warriors about 16% too much rage. Fixed in `sim/core/rage.go`.
 - Armour reduction had no 75% cap. Fixed in `sim/core/spell_resistances.go`.
+- Shield Slam was the Season of Discovery version (twice the block value, attack power
+  scaling, double threat). Fixed in `sim/warrior/shield_slam.go`.

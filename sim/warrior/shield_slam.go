@@ -11,12 +11,15 @@ func (warrior *Warrior) registerShieldSlamSpell() {
 		return
 	}
 
+	// Rank 4. Damage from the Era tooltip: "causing 342 to 358 damage, modified by your shield
+	// block value" (https://www.wowhead.com/classic/spell=23925). Season of Discovery changed this
+	// to twice the block value and added attack power; Era adds block value once and has no AP scaling.
+	// UNCERTAIN: no in-game test of the block value part; the tooltip wording is the only source.
 	spellID := int32(23925)
 	damageLow := 342.0
 	damageHigh := 358.0
+	// Bonus threat measured in game on 1.13.6: https://github.com/magey/classic-warrior/wiki/Threat-Mechanics
 	threat := 254.0
-
-	apCoef := 0.15
 
 	warrior.ShieldSlam = warrior.RegisterSpell(AnyStance, core.SpellConfig{
 		SpellCode:   SpellCode_WarriorShieldSlam,
@@ -48,11 +51,11 @@ func (warrior *Warrior) registerShieldSlamSpell() {
 
 		DamageMultiplier: 1,
 		ThreatMultiplier: 1,
-		FlatThreatBonus:  threat * 2,
+		FlatThreatBonus:  threat,
 		BonusCoefficient: 1,
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			damage := sim.Roll(damageLow, damageHigh) + warrior.BlockValue()*2 + apCoef*spell.MeleeAttackPower(target)
+			damage := sim.Roll(damageLow, damageHigh) + warrior.BlockValue()
 			result := spell.CalcAndDealDamage(sim, target, damage, spell.OutcomeMeleeSpecialHitAndCrit)
 
 			if !result.Landed() {
