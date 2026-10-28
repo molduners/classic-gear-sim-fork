@@ -1,7 +1,10 @@
 package healing
 
 import (
-	_ "github.com/wowsims/classic/sim/common" // imported to get caster sets included.
+	"testing"
+
+	_ "github.com/wowsims/classic/sim/common" // imported to get item effects included.
+	"github.com/wowsims/classic/sim/core"
 	"github.com/wowsims/classic/sim/core/proto"
 )
 
@@ -9,89 +12,59 @@ func init() {
 	RegisterHealingPriest()
 }
 
-// TODO: Classic
-// func TestDisc(t *testing.T) {
-// 	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator(core.CharacterSuiteConfig{
-// 		Class:    proto.Class_ClassPriest,
-// 		Race:     proto.Race_RaceUndead,
-// 		IsHealer: true,
+func TestHoly(t *testing.T) {
+	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator([]core.CharacterSuiteConfig{
+		{
+			Class:    proto.Class_ClassPriest,
+			Phase:    1,
+			Race:     proto.Race_RaceUndead,
+			IsHealer: true,
 
-// 		GearSet:     core.GetGearSet("../../../ui/healing_priest/gear_sets", "p1_disc"),
-// 		Talents:     DiscTalents,
-// 		Consumes:    FullConsumes,
-// 		SpecOptions: core.SpecOptionsCombo{Label: "Disc", SpecOptions: PlayerOptionsDisc},
-// 		Rotation:    core.GetAplRotation("../../../ui/healing_priest/apls", "disc"),
+			GearSet:     core.GetGearSet("../../../ui/healing_priest/gear_sets", "p0.holy"),
+			Talents:     HolyTalents,
+			Rotation:    core.GetAplRotation("../../../ui/healing_priest/apls", "holy"),
+			Buffs:       core.FullBuffs,
+			Consumes:    FullConsumes,
+			SpecOptions: core.SpecOptionsCombo{Label: "Holy", SpecOptions: PlayerOptionsHoly},
 
-// 		ItemFilter: core.ItemFilter{
-// 			WeaponTypes: []proto.WeaponType{
-// 				proto.WeaponType_WeaponTypeDagger,
-// 				proto.WeaponType_WeaponTypeMace,
-// 				proto.WeaponType_WeaponTypeOffHand,
-// 				proto.WeaponType_WeaponTypeStaff,
-// 			},
-// 			ArmorType: proto.ArmorType_ArmorTypeCloth,
-// 			RangedWeaponTypes: []proto.RangedWeaponType{
-// 				proto.RangedWeaponType_RangedWeaponTypeWand,
-// 			},
-// 		},
+			ItemFilter: core.ItemFilter{
+				WeaponTypes: []proto.WeaponType{
+					proto.WeaponType_WeaponTypeDagger,
+					proto.WeaponType_WeaponTypeMace,
+					proto.WeaponType_WeaponTypeOffHand,
+					proto.WeaponType_WeaponTypeStaff,
+				},
+				ArmorType: proto.ArmorType_ArmorTypeCloth,
+				RangedWeaponTypes: []proto.RangedWeaponType{
+					proto.RangedWeaponType_RangedWeaponTypeWand,
+				},
+			},
 
-// 		EPReferenceStat: proto.Stat_StatSpellPower,
-// 		StatsToWeigh: []proto.Stat{
-// 			proto.Stat_StatIntellect,
-// 			proto.Stat_StatSpellPower,
-// 			proto.Stat_StatSpellHaste,
-// 			proto.Stat_StatSpellCrit,
-// 		},
-// 	}))
-// }
-
-// func TestHoly(t *testing.T) {
-// 	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator(core.CharacterSuiteConfig{
-// 		Class:    proto.Class_ClassPriest,
-// 		Race:     proto.Race_RaceUndead,
-// 		IsHealer: true,
-
-// 		GearSet:     core.GetGearSet("../../../ui/healing_priest/gear_sets", "p1_holy"),
-// 		Talents:     HolyTalents,
-// 		Consumes:    FullConsumes,
-// 		SpecOptions: core.SpecOptionsCombo{Label: "Holy", SpecOptions: PlayerOptionsHoly},
-// 		Rotation:    core.GetAplRotation("../../../ui/healing_priest/apls", "holy"),
-
-// 		ItemFilter: core.ItemFilter{
-// 			WeaponTypes: []proto.WeaponType{
-// 				proto.WeaponType_WeaponTypeDagger,
-// 				proto.WeaponType_WeaponTypeMace,
-// 				proto.WeaponType_WeaponTypeOffHand,
-// 				proto.WeaponType_WeaponTypeStaff,
-// 			},
-// 			ArmorType: proto.ArmorType_ArmorTypeCloth,
-// 			RangedWeaponTypes: []proto.RangedWeaponType{
-// 				proto.RangedWeaponType_RangedWeaponTypeWand,
-// 			},
-// 		},
-// 	}))
-// }
-
-var DiscTalents = "0503203130300512301313231251-2351010303"
-var HolyTalents = "05032031103-234051032002152530004311051"
-
-var FullConsumes = &proto.Consumes{
-	Flask: proto.Flask_FlaskUnknown,
-	Food:  proto.Food_FoodUnknown,
+			EPReferenceStat: proto.Stat_StatHealingPower,
+			StatsToWeigh: []proto.Stat{
+				proto.Stat_StatIntellect,
+				proto.Stat_StatSpirit,
+				proto.Stat_StatHealingPower,
+				proto.Stat_StatSpellCrit,
+				proto.Stat_StatMP5,
+			},
+		},
+	}))
 }
 
-var PlayerOptionsDisc = &proto.Player_HealingPriest{
-	HealingPriest: &proto.HealingPriest{
-		Options: &proto.HealingPriest_Options{
-			UseInnerFire: true,
-		},
+var HolyTalents = "05420013050-034050032300155"
+
+var FullConsumes = core.ConsumesCombo{
+	Label: "Mana-Consumes",
+	Consumes: &proto.Consumes{
+		Flask:           proto.Flask_FlaskOfDistilledWisdom,
+		Food:            proto.Food_FoodNightfinSoup,
+		ManaRegenElixir: proto.ManaRegenElixir_MagebloodPotion,
 	},
 }
 
 var PlayerOptionsHoly = &proto.Player_HealingPriest{
 	HealingPriest: &proto.HealingPriest{
-		Options: &proto.HealingPriest_Options{
-			UseInnerFire: true,
-		},
+		Options: &proto.HealingPriest_Options{},
 	},
 }

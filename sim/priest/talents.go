@@ -22,10 +22,12 @@ func (priest *Priest) ApplyTalents() {
 		priest.MultiplyStat(stats.Stamina, 1.0+.15*float64(priest.Talents.ImprovedPowerWordFortitude))
 	}
 
-	priest.PseudoStats.SpiritRegenRateCasting = []float64{0.0, 0.17, 0.33, 0.5}[priest.Talents.Meditation]
+	// Meditation: 5/10/15% of spirit regen continues while casting (1.12 DBC 14521/14776/14777).
+	priest.PseudoStats.SpiritRegenRateCasting = 0.05 * float64(priest.Talents.Meditation)
 
+	// Mental Strength: +2% maximum mana per rank (1.12 DBC 18551-18555, aura 132), not Intellect.
 	if priest.Talents.MentalStrength > 0 {
-		priest.MultiplyStat(stats.Intellect, 1.0+0.02*float64(priest.Talents.MentalStrength))
+		priest.MultiplyStat(stats.Mana, 1.0+0.02*float64(priest.Talents.MentalStrength))
 	}
 
 	// Holy
@@ -67,7 +69,8 @@ func (priest *Priest) applyForceOfWill() {
 	}
 
 	priest.OnSpellRegistered(func(spell *core.Spell) {
-		if spell.Flags.Matches(SpellFlagPriest) {
+		// Force of Will only affects offensive spells.
+		if spell.Flags.Matches(SpellFlagPriest) && !spell.Flags.Matches(core.SpellFlagHelpful) {
 			spell.DamageMultiplierAdditive += 0.01 * float64(priest.Talents.ForceOfWill)
 			spell.BonusCritRating += 1 * float64(priest.Talents.ForceOfWill) * core.CritRatingPerCritChance
 		}
