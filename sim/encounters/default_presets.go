@@ -22,9 +22,12 @@ func addLevel60(bossPrefix string) {
 				stats.AttackPower: 805,     // TODO:
 			}.ToFloatArray(),
 
-			SpellSchool:      proto.SpellSchool_SpellSchoolPhysical,
-			SwingSpeed:       2,      // TODO:
-			MinBaseDamage:    3000,   // TODO:
+			SpellSchool: proto.SpellSchool_SpellSchoolPhysical,
+			// A mid-tier raid boss. In the 1.12 emulator database (cmangos classic-db) Molten Core
+			// bosses swing for about 1,600-2,900 and Blackwing Lair bosses about 2,400-5,100 before armour.
+			// UNCERTAIN: not checked against Warcraft Logs.
+			SwingSpeed:       2,
+			MinBaseDamage:    3000,
 			DamageSpread:     0.3333, // TODO:
 			ParryHaste:       true,
 			DualWield:        false,

@@ -97,13 +97,15 @@ func (weapon *Weapon) GetSpellSchool() SpellSchool {
 }
 
 func (weapon *Weapon) EnemyWeaponDamage(sim *Simulation, attackPower float64, damageSpread float64) float64 {
-	// Maximum damage range is 133% of minimum damage; AP contribution is % of minimum damage roll.
-	// Patchwerk follows special damage range rules.
-	// TODO: Scrape more logs to determine these values more accurately. AP defined in constants.go
-
+	// Damage is rolled between the minimum and minimum x (1 + spread). Attack power adds
+	// 1 damage per second per 14 AP, as for players, so AP / 14 x swing time per hit.
+	// Source: vanilla emulators (cmangos Creature::UpdateDamagePhysical uses AP / 14).
+	// UNCERTAIN: whether mob attack power scales with swing time; it adds ~5% to a raid boss swing.
+	// WoWSims used a Wrath of the Lich King fit here (min damage x AP / 2478), which added
+	// ~30% to a level 63 boss's swings.
 	rand := 1 + damageSpread*sim.RandomFloat("Enemy Weapon Damage")
 
-	return weapon.BaseDamageMin * (rand + attackPower*EnemyAutoAttackAPCoefficient)
+	return weapon.BaseDamageMin*rand + attackPower/14*weapon.SwingSpeed
 }
 
 func (weapon *Weapon) BaseDamage(sim *Simulation) float64 {

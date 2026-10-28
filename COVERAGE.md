@@ -36,6 +36,8 @@ fixed-seed regression snapshot exists; that catches changes, not inaccuracy.
 
 - Rage from damage was about 16% too high (`^` used as "squared" in Go). Affects every rage user.
 - Armour reduction now caps at 75%.
+- Boss swings used a Wrath of the Lich King attack power formula that added about 30% to a level 63 boss's hits. Now AP / 14 x swing time, as for players.
+- The default incoming healing on tank pages (also from Wrath) was far below what a vanilla tank takes, so chance of death read 100%.
 - Shield Slam used the Season of Discovery version: twice the block value, extra attack power scaling and double threat. Now the Era version.
 
 ## Other versions
