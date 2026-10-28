@@ -12,34 +12,36 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecHealingPriest, {
 	cssScheme: 'priest',
 	// List any known bugs / issues here and they'll be shown on the site.
 	knownIssues: [
-		'Talents that apply to, "friendly targets at or below 50% health" are not implemented.',
-		'Prayer of Mending always bounces the maximum number of times.',
+		'Heals land in full: overhealing and a simulated raid taking damage are not modelled yet, so HPS is raw output.',
+		'Power Word: Shield, Holy Nova, Lightwell and Inspiration\'s armor buff are not implemented yet.',
+		'Prayer of Healing only heals the players in your party in the sim (just you, on this page).',
 	],
 
 	// All stats for which EP should be calculated.
-	epStats: [Stat.StatIntellect, Stat.StatSpirit, Stat.StatSpellPower, Stat.StatSpellCrit, Stat.StatSpellHaste, Stat.StatMP5],
+	epStats: [Stat.StatIntellect, Stat.StatSpirit, Stat.StatHealingPower, Stat.StatSpellPower, Stat.StatSpellCrit, Stat.StatMP5],
 	// Reference stat against which to calculate EP. I think all classes use either spell power or attack power.
-	epReferenceStat: Stat.StatSpellPower,
+	epReferenceStat: Stat.StatHealingPower,
 	// Which stats to display in the Character Stats section, at the bottom of the left-hand sidebar.
-	displayStats: [Stat.StatMana, Stat.StatIntellect, Stat.StatSpirit, Stat.StatSpellPower, Stat.StatSpellCrit, Stat.StatSpellHaste, Stat.StatMP5],
+	displayStats: [Stat.StatMana, Stat.StatIntellect, Stat.StatSpirit, Stat.StatHealingPower, Stat.StatSpellPower, Stat.StatSpellCrit, Stat.StatMP5],
 	displayPseudoStats: [],
 
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.GearBlank.gear,
+		gear: Presets.GearHolyP0.gear,
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: Stats.fromMap({
-			[Stat.StatIntellect]: 2.73,
-			[Stat.StatSpirit]: 1.63,
+			// Rough starting weights until the sim computes its own.
+			[Stat.StatIntellect]: 0.5,
+			[Stat.StatSpirit]: 0.5,
+			[Stat.StatHealingPower]: 1,
 			[Stat.StatSpellPower]: 1,
-			[Stat.StatSpellCrit]: 0.75,
-			[Stat.StatSpellHaste]: 0.28,
-			[Stat.StatMP5]: 2.05,
+			[Stat.StatSpellCrit]: 7,
+			[Stat.StatMP5]: 2.2,
 		}),
 		// Default consumes settings.
 		consumes: Presets.DefaultConsumes,
 		// Default talents.
-		talents: Presets.DiscTalents.data,
+		talents: Presets.HolyTalents.data,
 		// Default spec-specific settings.
 		specOptions: Presets.DefaultOptions,
 		// Default raid/party buffs settings.
@@ -50,7 +52,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecHealingPriest, {
 	},
 
 	// IconInputs to include in the 'Player' section on the settings tab.
-	playerIconInputs: [HealingPriestInputs.SelfPowerInfusion, HealingPriestInputs.InnerFire],
+	playerIconInputs: [HealingPriestInputs.SelfPowerInfusion],
 	// Buff and Debuff inputs to include/exclude, overriding the EP-based defaults.
 	includeBuffDebuffInputs: [],
 	excludeBuffDebuffInputs: [],
@@ -65,47 +67,18 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecHealingPriest, {
 
 	presets: {
 		// Preset talents that the user can quickly select.
-		talents: [Presets.DiscTalents, Presets.HolyTalents],
+		talents: [Presets.HolyTalents],
 		// Preset rotations that the user can quickly select.
-		rotations: [Presets.ROTATION_PRESET_DISC, Presets.ROTATION_PRESET_HOLY],
+		rotations: [Presets.ROTATION_PRESET_HOLY],
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.GearBlank, Presets.GearBlank],
+		gear: [Presets.GearHolyP0, Presets.GearBlank],
 	},
 
-	autoRotation: (player: Player<Spec.SpecHealingPriest>): APLRotation => {
-		const talentTree = player.getTalentTree();
-		if (talentTree == 0) {
-			return Presets.ROTATION_PRESET_DISC.rotation.rotation!;
-		} else {
-			return Presets.ROTATION_PRESET_HOLY.rotation.rotation!;
-		}
+	autoRotation: (_player: Player<Spec.SpecHealingPriest>): APLRotation => {
+		return Presets.ROTATION_PRESET_HOLY.rotation.rotation!;
 	},
 
 	raidSimPresets: [
-		{
-			spec: Spec.SpecHealingPriest,
-			tooltip: 'Discipline Priest',
-			defaultName: 'Discipline',
-			iconUrl: getSpecIcon(Class.ClassPriest, 0),
-
-			talents: Presets.DiscTalents.data,
-			specOptions: Presets.DefaultOptions,
-			consumes: Presets.DefaultConsumes,
-			defaultFactionRaces: {
-				[Faction.Unknown]: Race.RaceUnknown,
-				[Faction.Alliance]: Race.RaceDwarf,
-				[Faction.Horde]: Race.RaceUndead,
-			},
-			defaultGear: {
-				[Faction.Unknown]: {},
-				[Faction.Alliance]: {
-					1: Presets.GearBlank.gear,
-				},
-				[Faction.Horde]: {
-					1: Presets.GearBlank.gear,
-				},
-			},
-		},
 		{
 			spec: Spec.SpecHealingPriest,
 			tooltip: 'Holy Priest',
@@ -123,10 +96,10 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecHealingPriest, {
 			defaultGear: {
 				[Faction.Unknown]: {},
 				[Faction.Alliance]: {
-					1: Presets.GearBlank.gear,
+					1: Presets.GearHolyP0.gear,
 				},
 				[Faction.Horde]: {
-					1: Presets.GearBlank.gear,
+					1: Presets.GearHolyP0.gear,
 				},
 			},
 		},

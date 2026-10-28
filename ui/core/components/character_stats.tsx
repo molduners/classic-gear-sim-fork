@@ -44,6 +44,7 @@ const statGroups = new Map<string, Array<UnitStat>>([
 		[
 			UnitStat.fromStat(Stat.StatSpellPower),
 			UnitStat.fromStat(Stat.StatSpellDamage),
+			UnitStat.fromStat(Stat.StatHealingPower),
 			UnitStat.fromStat(Stat.StatArcanePower),
 			UnitStat.fromStat(Stat.StatFirePower),
 			UnitStat.fromStat(Stat.StatFrostPower),
@@ -458,6 +459,11 @@ export class CharacterStats extends Component {
 				const spDmg = Math.round(rawValue);
 				const baseSp = Math.round(deltaStats.getStat(Stat.StatSpellPower));
 				displayStr = baseSp + spDmg + ` (+${spDmg})`;
+			} else if (stat === Stat.StatHealingPower) {
+				// +healing items stack with gear that adds both damage and healing.
+				const healing = Math.round(rawValue);
+				const baseSp = Math.round(deltaStats.getStat(Stat.StatSpellPower));
+				displayStr = baseSp + healing + ` (+${healing})`;
 			} else if (
 				stat === Stat.StatArcanePower ||
 				stat === Stat.StatFirePower ||

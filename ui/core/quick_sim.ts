@@ -65,7 +65,7 @@ const CLASSES: Record<string, ClassEntry> = {
 	},
 	priest: {
 		name: 'Priest',
-		trees: [null, null, { spec: 'Shadow', page: 'shadow_priest' }],
+		trees: [null, { spec: 'Holy', page: 'healing_priest' }, { spec: 'Shadow', page: 'shadow_priest' }],
 	},
 	druid: {
 		name: 'Druid',

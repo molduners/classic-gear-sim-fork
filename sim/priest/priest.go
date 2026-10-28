@@ -26,6 +26,8 @@ const (
 	SpellCode_PriestSmite
 	SpellCode_PriestStarshards
 	SpellCode_PriestVampiricTouch
+	SpellCode_PriestRenew
+	SpellCode_PriestPrayerOfHealing
 )
 
 type Priest struct {
@@ -39,6 +41,7 @@ type Priest struct {
 	EmpoweredRenew    *core.Spell
 	FlashHeal         []*core.Spell
 	GreaterHeal       []*core.Spell
+	Heal              []*core.Spell
 	HolyFire          []*core.Spell
 	InnerFocus        *core.Spell
 	MindBlast         []*core.Spell
@@ -95,14 +98,6 @@ func (priest *Priest) Initialize() {
 	priest.registerHolyFire()
 
 	priest.registerPowerInfusionCD()
-}
-
-func (priest *Priest) RegisterHealingSpells() {
-	// priest.registerFlashHealSpell()
-	// priest.registerGreaterHealSpell()
-	// priest.registerPowerWordShieldSpell()
-	// priest.registerPrayerOfHealingSpell()
-	// priest.registerRenewSpell()
 }
 
 func New(character *core.Character, talents string) *Priest {

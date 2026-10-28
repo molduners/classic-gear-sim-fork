@@ -9,7 +9,11 @@ decision at a time.
 
 **Milestone 5: tanking and healing.** First part is Protection Warrior: threat, the boss's
 hit table and damage taken are checked in `validation/warrior/tank_test.go`, and the tank
-rotation is `ui/tank_warrior/apls/prot.apl.json`. Healing comes next.
+rotation is `ui/tank_warrior/apls/prot.apl.json` (merged). Second part: vanilla-sized boss
+swings and default incoming healing (`EnemyWeaponDamage`, `Player.setDefaultHealingParams`),
+then the healer specs. Holy Priest is first (`sim/priest/heals.go`, `ui/healing_priest`,
+checks in `validation/priest`); the healer view is "output and mana" for now (raw HPS and
+time to out-of-mana), with a simulated raid and overhealing to come.
 
 Merged so far: 1 (fork, ruleset layer), 2 (Warrior validated against WarriorSim,
 `validation/warrior`), 3 (Quick Sim page, GitHub Pages) and 4 (Top Gear: the spec page's

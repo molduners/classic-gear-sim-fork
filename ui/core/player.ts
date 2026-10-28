@@ -969,7 +969,10 @@ export class Player<SpecType extends Spec> {
 			}
 		}
 		if (hm.hps === 0) {
-			hm.hps = (0.175 * boss.minBaseDamage) / boss.swingSpeed;
+			// About 1.2x what a raid-buffed pre-raid Protection Warrior takes from this boss, so
+			// chance of death shows the risk of unlucky streaks (about 6% for that tank).
+			// WoWSims used 0.175 here, tuned for Wrath of the Lich King, which killed every vanilla tank.
+			hm.hps = (0.45 * boss.minBaseDamage) / boss.swingSpeed;
 			if (dualWield) {
 				hm.hps *= 1.5;
 			}

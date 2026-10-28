@@ -433,6 +433,21 @@ export class RaidSimResultsManager {
 					classes: this.getResultsLineClasses('dps'),
 				});
 
+				// Healers: healing per second and time until out of mana. Hidden on pages that hide healing metrics.
+				resultColumns.push({
+					name: 'HPS',
+					average: playerMetrics.hps.avg,
+					stdev: playerMetrics.hps.stdev,
+					classes: this.getResultsLineClasses('hps'),
+				});
+				resultColumns.push({
+					name: 'TTO',
+					average: playerMetrics.tto.avg,
+					stdev: playerMetrics.tto.stdev,
+					classes: this.getResultsLineClasses('tto'),
+					unit: 'seconds',
+				});
+
 				if (dpaspMetrics.avg) {
 					resultColumns.push({
 						name: 'DPASP',

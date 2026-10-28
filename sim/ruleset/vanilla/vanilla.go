@@ -19,7 +19,7 @@ import (
 	"github.com/wowsims/classic/sim/paladin/protection"
 	"github.com/wowsims/classic/sim/paladin/retribution"
 
-	// healingPriest "github.com/wowsims/classic/sim/priest/healing"
+	healingPriest "github.com/wowsims/classic/sim/priest/healing"
 	"github.com/wowsims/classic/sim/priest/shadow"
 	dpsrogue "github.com/wowsims/classic/sim/rogue/dps_rogue"
 
@@ -53,7 +53,7 @@ func registerSpecs() {
 	// restoShaman.RegisterRestorationShaman()
 	hunter.RegisterHunter()
 	mage.RegisterMage()
-	// healingPriest.RegisterHealingPriest()
+	healingPriest.RegisterHealingPriest()
 	shadow.RegisterShadowPriest()
 	dpsrogue.RegisterDpsRogue()
 	dpsWarrior.RegisterDpsWarrior()
