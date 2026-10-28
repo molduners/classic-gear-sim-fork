@@ -7,13 +7,14 @@ decision at a time.
 
 ## Current milestone
 
-**Milestone 4: Top Gear.** The spec page's Top Gear tab (WoWSims' bulk sim) ranks every
-valid combination of bag items against the equipped gear. Each gain has a ± margin from a
-same-seed paired comparison, and gains inside it are flagged "Too close to call". Quick Sim
-takes an optional bag export and opens straight into Top Gear. Milestones 1 (fork, ruleset
-layer), 2 (Warrior validated against WarriorSim, `validation/warrior`) and 3 (Quick Sim
-page, GitHub Pages) are merged.
-Next: milestone 5 (healing/tanking, other specs, more versions, polish).
+**Milestone 5: tanking and healing.** First part is Protection Warrior: threat, the boss's
+hit table and damage taken are checked in `validation/warrior/tank_test.go`, and the tank
+rotation is `ui/tank_warrior/apls/prot.apl.json`. Healing comes next.
+
+Merged so far: 1 (fork, ruleset layer), 2 (Warrior validated against WarriorSim,
+`validation/warrior`), 3 (Quick Sim page, GitHub Pages) and 4 (Top Gear: the spec page's
+Top Gear tab ranks bag combos with a ± margin and a "Too close to call" flag; Quick Sim
+takes an optional bag export and opens straight into Top Gear).
 
 The full plan (architecture, milestones, coverage) is in the project's plan doc:
 https://claude.ai/code/artifact/61044d30-999a-4b64-9abf-ae7180a84baa
@@ -110,6 +111,8 @@ built site to another path (GitHub Pages serves it at `/<repo name>/`).
   reference within a recorded tolerance.
 - Validation scenarios live in `validation/<class>/`. Never copy code from unlicensed
   reference sims (e.g. WarriorSim); fetch them into a gitignored `.cache/` instead.
+- Tank pages put the player in front of the boss (`InFrontOfTarget`), so the boss can parry
+  and block. Set it in tank tests too, and list the warrior in `Raid.tanks`.
 - In APLs, queue Heroic Strike / Cleave / Maul with `"tag": 1`. Untagged, it casts as an
   instant extra attack and overstates DPS by about 30%.
 - Every spell coefficient or proc rate we add or change gets a source note in a comment.
