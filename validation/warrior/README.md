@@ -55,7 +55,8 @@ are marked `UNCERTAIN` in the code, and all are listed in `COVERAGE.md`.
 There is no independent tank sim to compare against, so `tank_test.go` checks the pieces
 against in-game measurements and hand calculations instead. It uses the Protection
 rotation and pre-raid gear from `ui/tank_warrior`, Human, no buffs, against a level 63
-boss with 3731 armour hitting for 1500 to 2000 every 2 seconds.
+boss with 3731 armour and 805 attack power hitting for 1500 to 2000 (+115 from attack power)
+every 2 seconds.
 
 - **Threat:** each ability's threat equals (damage × multiplier + bonus threat per landed
   hit) × 1.495 (Defensive Stance with 5/5 Defiance), using the values the

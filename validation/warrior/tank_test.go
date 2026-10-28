@@ -14,11 +14,12 @@ import (
 
 const protTalents = "20304300302-03-55200110530201051"
 
-// Boss used by the tank checks: a level 63 raid boss hitting for 1500-2000 every 2 seconds.
+// Boss used by the tank checks: a level 63 raid boss hitting for 1500-2000 every 2 seconds,
+// plus 805 attack power (805 / 14 x 2 = 115 more per hit).
 var tankBoss = &proto.Target{
 	Level:         63,
 	MobType:       proto.MobType_MobTypeUnknown,
-	Stats:         stats.Stats{stats.Armor: 3731}.ToFloatArray(),
+	Stats:         stats.Stats{stats.Armor: 3731, stats.AttackPower: 805}.ToFloatArray(),
 	MinBaseDamage: 1500,
 	DamageSpread:  1.0 / 3,
 	SwingSpeed:    2,
@@ -273,6 +274,7 @@ func TestTankBossAttackTable(t *testing.T) {
 // - Armour: reduction = armour / (armour + 400 + 85 x attacker level), capped at 75%.
 //   Source: https://wowwiki-archive.fandom.com/wiki/Armor (vanilla formula).
 // - Defensive Stance: 10% less damage taken.
+// - Attack power adds AP / 14 x swing time to each hit, as for players.
 // - Crits deal 200%, crushing blows 150%; a block subtracts the shield's block value.
 func TestTankDamageTaken(t *testing.T) {
 	req := tankRequest(t, whiteOnlyAPL, 2000)
@@ -283,8 +285,9 @@ func TestTankDamageTaken(t *testing.T) {
 	if m.Casts == 0 {
 		t.Fatal("the boss never swung")
 	}
-	low := tankBoss.MinBaseDamage
-	high := low * (1 + tankBoss.DamageSpread)
+	apBonus := 805.0 / 14 * tankBoss.SwingSpeed
+	low := tankBoss.MinBaseDamage + apBonus
+	high := tankBoss.MinBaseDamage*(1+tankBoss.DamageSpread) + apBonus
 	armor := sheet[stats.Armor]
 	scale := (1 - min(armor/(armor+400+85*63), 0.75)) * 0.9
 	avg := (low + high) / 2 * scale
